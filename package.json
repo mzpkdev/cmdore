@@ -1,0 +1,43 @@
+{
+  "name": "cmdore",
+  "description": "A lightweight, type-safe CLI framework for Node.js applications",
+  "version": "0.0.0",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "tsc --build --clean",
+    "preprepare": "ts-patch install",
+    "prepack": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^22.4.0",
+    "@types/prompts": "^2.4.9",
+    "ts-patch": "^3.2.1",
+    "tslib": "^2.6.3",
+    "typescript": "^5.5.4",
+    "typescript-transform-paths": "^3.4.11"
+  },
+  "author": "Mateusz Pietrzak",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mzpkdev/cmdore.git"
+  },
+  "files": [
+    "bin/",
+    "lib/**/*.js",
+    "lib/**/*.d.ts",
+    "lib/**/*.d.ts.map",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "cli",
+    "cli-framework"
+  ],
+  "dependencies": {
+    "argvex": "^0.0.3",
+    "logtint": "^0.2.0"
+  }
+}
