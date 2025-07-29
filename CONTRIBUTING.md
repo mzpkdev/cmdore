@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for your interest in helping improve `cmdly`!  
+Thank you for your interest in helping improve `cmdore`!  
 Whether you want to improve documentation, suggest features, or fix bugs,
 this guide will help you get started. 🎉
 
@@ -24,4 +24,4 @@ this guide will help you get started. 🎉
 
 ---
 
-Thanks for contributing to `cmdly`!
+Thanks for contributing to `cmdore`!

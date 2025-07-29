@@ -1,5 +1,5 @@
 {
-  "name": "ncli",
+  "name": "cmdore",
   "description": "",
   "version": "0.0.0",
   "main": "./lib/index.js",
@@ -21,7 +21,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mzpkdev/ncli.git"
+    "url": "git+https://github.com/mzpkdev/cmdore.git"
   },
   "files": [
     "bin/",
