@@ -1,10 +1,11 @@
-import * as path from "node:path"
 import argvex from "argvex"
 import log, { bold, dim } from "logtint"
 import { CmdoreError } from "../errors"
 import Command, { Arguments } from "./Command"
 import Option from "./Option"
 import { effect, mock } from "../tools"
+import * as pkg from "../pkg"
+import * as path from "node:path"
 
 
 class Program {
@@ -17,7 +18,11 @@ class Program {
     >()
 
     constructor() {
-        const { name, description, version } = require(path.join(process.cwd(), "./package.json"))
+        const root = pkg.parent()
+        if (root == null) {
+            throw new Error()
+        }
+        const { name, description, version } = require(path.join(root, "./package.json"))
         this.#_name = name
         this.#_description = description
         this.#_version = version
