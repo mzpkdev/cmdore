@@ -1,11 +1,20 @@
 import * as path from "node:path"
-import argvex from "argvex"
 import log, { bold, dim } from "logtint"
+import argvex from "argvex"
 import { CmdoreError } from "../errors"
-import Command, { Arguments } from "./Command"
 import Option from "./Option"
+import Command, { Argv } from "./Command"
+import { isAsyncIterable, isIterable } from "../utils"
 import { effect, mock } from "../tools"
+import * as pkg from "../pkg"
 
+
+/*
+    TODO:
+      - Remove terminal api and monkey-patch console.log for coloring
+      - Provide options to enable or disable default console.log coloring
+      - Fix root package resolving, now it only works when it's linked
+ */
 
 class Program {
     #_name: string = ""
@@ -13,19 +22,23 @@ class Program {
     #_version: string = ""
     #_commands = new Map<string, Command>()
     #_interceptors = new Set<
-        [ (argument: Arguments) => Promise<Arguments | void>, Option[] ]
+        [ (argv: Argv) => Promise<Argv | void>, Option[] ]
     >()
 
     constructor() {
-        const { name, description, version } = require(path.join(process.cwd(), "./package.json"))
+        const root = pkg.parent()
+        if (root == null) {
+            throw new Error()
+        }
+        const { name, description, version } = require(path.join(root, "./package.json"))
         this.#_name = name
         this.#_description = description
         this.#_version = version
     }
 
-    intercept<TOptionsTOptionArray extends Option[] = Option<string, any>[]>(
-        dependencies: TOptionsTOptionArray,
-        interceptor: (argument: Arguments<TOptionsTOptionArray>) => Promise<Arguments | void>
+    intercept<TOptionArray extends Option[] = Option<string, any>[]>(
+        dependencies: TOptionArray,
+        interceptor: (argv: Argv<TOptionArray>) => Promise<Argv | void>
     ): this {
         this.#_interceptors.add([ interceptor, dependencies ])
         return this
@@ -50,6 +63,7 @@ class Program {
             for (const [ left, right ] of man) {
                 log`  ${left.padEnd(48, " ")}  ${right}`
             }
+            log``
             return this
         }
         log`${bold(dim`USAGE`)}`
@@ -83,6 +97,7 @@ class Program {
                 log`  $ ${this.#_name} ${command.name} ${dim(example)}`
             }
         }
+        log``
         return this
     }
 
@@ -121,10 +136,10 @@ class Program {
         if (flags["dry-run"]) {
             effect.enabled = false
         }
-        let accumulator: Arguments = {}
+        let argv2: Argv = {}
         for (const option of command.options ?? []) {
             const values: string[] | undefined = flags[option.alias ?? option.name] ?? flags[option.name]
-            accumulator[option.name] = await Option.parse(option, values)
+            argv2[option.name] = await Option.parse(option, values)
         }
         const log = console.log.bind(console)
         const mocked = []
@@ -142,12 +157,12 @@ class Program {
             )
         }
         for (const [ interceptor, dependencies ] of this.#_interceptors) {
-            if (dependencies.every(dependency => dependency.name in accumulator)) {
-                accumulator = await interceptor(accumulator) ?? accumulator
+            if (dependencies.every(dependency => dependency.name in argv2)) {
+                argv2 = await interceptor(argv2) ?? argv2
             }
         }
-        const output = command.run?.(accumulator) ?? []
-        if (output) {
+        const output = await command.run?.(argv2)
+        if (isIterable(output) || isAsyncIterable(output)) {
             for await (const entry of output) {
                 if (flags.json) {
                     log(entry)

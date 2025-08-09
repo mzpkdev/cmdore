@@ -8,6 +8,7 @@ type Option<TName = string, TValue = unknown> = {
     defaultValue?: () => TValue
     validate?: (...values: string[]) => void | boolean | Promise<unknown>
     parse?: (...values: string[]) => TValue
+    [property: string]: unknown
 }
 
 namespace Option {

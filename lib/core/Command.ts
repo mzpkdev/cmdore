@@ -1,7 +1,7 @@
 import Option from "./Option"
 
 
-export type Arguments<TOptionArray extends Option[] = Option<string, any>[]> = {
+export type Argv<TOptionArray extends Option[] = Option<string, any>[]> = {
     [TKey in TOptionArray[number] as TKey["name"]]: TKey extends Option<any, infer TValue>
         ? TValue
         : unknown
@@ -12,7 +12,12 @@ export type Command<TOptionArray extends Option[] = Option[]> = {
     description?: string
     examples?: string[]
     options?: TOptionArray
-    run?: (options: Arguments<TOptionArray>) => AsyncIterable<unknown> | Iterable<unknown> | unknown[] | void
+    run?: (this: Command<TOptionArray>, argv: Argv<TOptionArray>) =>
+        | AsyncIterable<unknown>
+        | Iterable<unknown>
+        | unknown[]
+        | unknown
+    // [property: string]: unknown
 }
 
 export const defineCommand = <
