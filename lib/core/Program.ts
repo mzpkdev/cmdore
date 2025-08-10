@@ -5,16 +5,20 @@ import { CmdoreError } from "../errors"
 import Option from "./Option"
 import Command, { Argv } from "./Command"
 import { isAsyncIterable, isIterable } from "../utils"
-import { effect, mock } from "../tools"
+import { colorConsoleLog, effect, mock } from "../tools"
 import * as pkg from "../pkg"
 
 
 /*
     TODO:
       - Remove terminal api and monkey-patch console.log for coloring
-      - Provide options to enable or disable default console.log coloring
-      - Fix root package resolving, now it only works when it's linked
+      - Provide options to enable or disable default console.log monkey-patched coloring
+      - Fix root package resolving in pkg.ts util, now it only works when it's linked
  */
+
+export type Configuration = {
+    colors: boolean
+}
 
 class Program {
     #_name: string = ""
@@ -25,7 +29,12 @@ class Program {
         [ (argv: Argv) => Promise<Argv | void>, Option[] ]
     >()
 
-    constructor() {
+    constructor(configuration?: Configuration) {
+        const { colors = true } = configuration ?? {}
+        if (colors) {
+            colorConsoleLog()
+        }
+
         const root = pkg.parent()
         if (root == null) {
             throw new Error()
@@ -165,7 +174,7 @@ class Program {
         if (isIterable(output) || isAsyncIterable(output)) {
             for await (const entry of output) {
                 if (flags.json) {
-                    log(entry)
+                    log(JSON.stringify(entry, null, 2))
                 }
             }
         }

@@ -16,6 +16,36 @@ export const mock = <TInstance>(instance: TInstance, property: keyof TInstance) 
     }
 }
 
+export const colorConsoleLog = (): void => {
+    const original = {
+        debug: console.debug.bind(console),
+        info: console.info.bind(console),
+        log: console.log.bind(console),
+        warn: console.warn.bind(console),
+        error: console.error.bind(console),
+    }
+
+    console.debug = (message?: string): void => {
+        log(original.debug)`${dim`${message}`}`
+    }
+
+    console.info = (message?: string): void => {
+        log(original.info)`${message}`
+    }
+
+    console.log = (message?: string): void => {
+        log(original.log)`${message}`
+    }
+
+    console.warn = (message?: string): void => {
+        log(original.warn)`${yellow`${message}`}`
+    }
+
+    console.error = (message?: string): void => {
+        log(original.error)`${red`${message}`}`
+    }
+}
+
 export const terminal = {
     verbose: (message?: string): void => {
         log(console.info)`${dim`${message}`}`
