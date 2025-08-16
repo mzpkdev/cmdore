@@ -1,4 +1,3 @@
-import * as path from "node:path"
 import log, { bold, dim } from "logtint"
 import argvex from "argvex"
 import { CmdoreError } from "../errors"
@@ -6,7 +5,7 @@ import Option from "./Option"
 import Command, { Argv } from "./Command"
 import { isAsyncIterable, isIterable } from "../utils"
 import { colorConsoleLog, effect, mock } from "../tools"
-import * as pkg from "../pkg"
+import pkg from "pkginspect"
 
 
 /*
@@ -35,11 +34,11 @@ class Program {
             colorConsoleLog()
         }
 
-        const root = pkg.parent()
+        const root = pkg.inspect()?.root
         if (root == null) {
             throw new Error()
         }
-        const { name, description, version } = require(path.join(root, "./package.json"))
+        const { name, description, version } = root.metadata
         this.#_name = name
         this.#_description = description
         this.#_version = version
