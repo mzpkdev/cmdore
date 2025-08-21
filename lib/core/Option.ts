@@ -4,6 +4,7 @@ type Option<TName = string, TValue = unknown> = {
     name: TName
     description?: string
     alias?: string
+    arity?: number
     required?: boolean
     defaultValue?: () => TValue
     validate?: (...values: string[]) => void | boolean | Promise<unknown>

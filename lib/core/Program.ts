@@ -1,47 +1,37 @@
+import pkg, { Metadata } from "pkginspect"
 import log, { bold, dim } from "logtint"
 import argvex from "argvex"
 import { CmdoreError } from "../errors"
-import Option from "./Option"
-import Command, { Argv } from "./Command"
 import { isAsyncIterable, isIterable } from "../utils"
 import { colorConsoleLog, effect, mock } from "../tools"
-import pkg from "pkginspect"
+import Option from "./Option"
+import Command, { Argv } from "./Command"
 
-
-/*
-    TODO:
-      - Remove terminal api and monkey-patch console.log for coloring
-      - Provide options to enable or disable default console.log monkey-patched coloring
-      - Fix root package resolving in pkg.ts util, now it only works when it's linked
- */
 
 export type Configuration = {
     colors: boolean
 }
 
 class Program {
-    #_name: string = ""
-    #_description: string = ""
-    #_version: string = ""
+    #_metadata: Metadata | undefined
     #_commands = new Map<string, Command>()
     #_interceptors = new Set<
         [ (argv: Argv) => Promise<Argv | void>, Option[] ]
     >()
+
+    get metadata(): Metadata {
+        if (this.#_metadata == null) {
+            const self = pkg.inspect()
+            this.#_metadata = self.root.metadata
+        }
+        return this.#_metadata
+    }
 
     constructor(configuration?: Configuration) {
         const { colors = true } = configuration ?? {}
         if (colors) {
             colorConsoleLog()
         }
-
-        const root = pkg.inspect()?.root
-        if (root == null) {
-            throw new Error()
-        }
-        const { name, description, version } = root.metadata
-        this.#_name = name
-        this.#_description = description
-        this.#_version = version
     }
 
     intercept<TOptionArray extends Option[] = Option<string, any>[]>(
@@ -58,12 +48,13 @@ class Program {
     }
 
     help(command?: Command): this {
+        const { name, description } = this.metadata
         log``
-        log`${bold(this.#_name)} - ${this.#_description}`
+        log`${bold(name)} - ${description}`
         log``
         if (command == null) {
             log`${bold(dim`USAGE`)}`
-            log`  ${this.#_name} <command> [options]`
+            log`  ${name} <command> [options]`
             log``
             log`${bold(dim`COMMANDS`)}`
             const man: readonly [ string, string ][] = Array.from(this.#_commands.values())
@@ -75,14 +66,25 @@ class Program {
             return this
         }
         log`${bold(dim`USAGE`)}`
-        log`  ${this.#_name} ${command.name} [options]`
+        log`  ${name} ${command.name} [options]`
         log``
         log`${bold(dim`OPTIONS`)}`
         const man: string[][] = (command.options ?? [])
             .map(option => {
-                const left = option.alias
+                const flags = option.alias
                     ? `-${option.alias}, --${option.name}` : `--${option.name}`.padStart(4, " ")
-                return [ left, option.description ?? "" ]
+                const args = ""
+                let info = ""
+                if (option.required) {
+                    info = "(required)"
+                }
+                if (option.defaultValue) {
+                    const defaultValue = option.defaultValue()
+                    info = `(${JSON.stringify(defaultValue)})`
+                }
+                const left = `${flags}\t${args}`
+                const right = `${option.description} (${info})`
+                return [ left, right ]
             })
         for (const [ left, right ] of man) {
             log`  ${left.padEnd(48, " ")}  ${right}`
@@ -102,7 +104,7 @@ class Program {
             log``
             log`${bold(dim`EXAMPLES`)}`
             for (const example of command.examples ?? []) {
-                log`  $ ${this.#_name} ${command.name} ${dim(example)}`
+                log`  $ ${name} ${command.name} ${dim(example)}`
             }
         }
         log``
@@ -110,7 +112,8 @@ class Program {
     }
 
     version(): this {
-        log`v${this.#_version}`
+        const { version } = this.metadata
+        log`v${version}`
         return this
     }
 
@@ -125,8 +128,8 @@ class Program {
             { name: "quiet", arity: 0 },
             { name: "json", arity: 0 },
             { name: "dry-run", arity: 0 },
-            ...options.map(({ name, alias }) => (
-                { name, alias, arity: Infinity }
+            ...options.map(({ name, alias, arity }) => (
+                { name, alias, arity: arity ?? Infinity }
             ))
         ]
         const { _: operands, ...flags } = argvex({ argv, schema, strict: true })

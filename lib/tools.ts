@@ -1,5 +1,5 @@
 import * as readline from "readline"
-import log, { dim, red, yellow } from "logtint"
+import log, { dim, red, reset, yellow } from "logtint"
 
 export const effect = async (callback: () => Promise<unknown> | unknown): Promise<unknown> => {
     if (effect.enabled) {
@@ -25,27 +25,38 @@ export const colorConsoleLog = (): void => {
         error: console.error.bind(console),
     }
 
-    console.debug = (message?: string): void => {
-        log(original.debug)`${dim`${message}`}`
+    console.debug = (...messages: string[]): void => {
+        betterLog(messages, original.debug, dim)
     }
 
-    console.info = (message?: string): void => {
-        log(original.info)`${message}`
+    console.info = (...messages: string[]): void => {
+        betterLog(messages, original.info, reset)
     }
 
-    console.log = (message?: string): void => {
-        log(original.log)`${message}`
+    console.log = (...messages: unknown[]): void => {
+        betterLog(messages, original.log, reset)
     }
 
-    console.warn = (message?: string): void => {
-        log(original.warn)`${yellow`${message}`}`
+    console.warn = (...messages: string[]): void => {
+        betterLog(messages, original.warn, yellow)
     }
 
-    console.error = (message?: string): void => {
-        log(original.error)`${red`${message}`}`
+    console.error = (...messages: string[]): void => {
+        betterLog(messages, original.error, red)
     }
 }
 
+const betterLog = (messages: unknown[], originalLog: typeof console.log, color: typeof reset) => {
+    for (const message of messages) {
+        if (typeof message === "string") {
+            log(originalLog)`${color`${message}`}`
+        } else {
+            console.dir(message)
+        }
+    }
+}
+
+// TODO: Remove?
 export const terminal = {
     verbose: (message?: string): void => {
         log(console.info)`${dim`${message}`}`
