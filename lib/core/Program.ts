@@ -42,8 +42,8 @@ class Program {
         return this
     }
 
-    register(command: Command): this {
-        this.#_commands.set(command.name, command)
+    register<TOptionArray extends Option[]>(command: Command<TOptionArray>): this {
+        this.#_commands.set(command.name, command as any)
         return this
     }
 
