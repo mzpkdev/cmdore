@@ -8,13 +8,15 @@
     "build": "tsc --build",
     "clean": "tsc --build --clean",
     "preprepare": "ts-patch install",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "test": "vitest --no-watch"
   },
   "devDependencies": {
     "@types/node": "^22.4.0",
     "ts-patch": "^3.2.1",
     "typescript": "^5.5.4",
-    "typescript-transform-paths": "^3.4.11"
+    "typescript-transform-paths": "^3.4.11",
+    "vitest": "^3.2.4"
   },
   "author": "Mateusz Pietrzak",
   "license": "MIT",
