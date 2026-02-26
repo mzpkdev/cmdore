@@ -132,7 +132,7 @@ class Program {
                 { name, alias, arity: arity ?? Infinity }
             ))
         ]
-        const { _: operands, ...flags } = argvex({ argv, schema, strict: true })
+        const { _: operands, ...flags } = argvex({ argv, schema, strict: true, override: true })
         if (flags.help || main == null) {
             this.help(command)
             return
