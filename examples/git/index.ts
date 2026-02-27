@@ -4,7 +4,7 @@ const tokenOption = defineOption({
     name: "token",
     required: true,
     description: "Authentication token",
-    parse: (value) => value.toUpperCase()
+    validate: (value) => value.toUpperCase()
 })
 
 const push = defineCommand({

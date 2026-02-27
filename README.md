@@ -38,6 +38,7 @@ Table of Contents
   * [How to install](#how-to-install)
   * [How to use](#how-to-use)
   * [How to validate and parse](#how-to-validate-and-parse)
+  * [Using with Zod (or any schema library)](#using-with-zod-or-any-schema-library)
   * [How --quiet & --verbose works](#how---quiet----verbose-works)
   * [How --dry-run works](#how---dry-run-works)
   * [How --json works](#how---json-works)
@@ -62,7 +63,7 @@ cmdore is a modern CLI framework that stands out with its perfect balance of sim
 * **Smart Output Control**: Built-in support for quiet, verbose, JSON, and dry-run modes with minimal code
 * **Interactive Prompts**: Easily create interactive CLI experiences with built-in prompt utilities
 * **Automatic Help Generation**: Beautiful, automatically generated help text for all commands
-* **Powerful Validation**: Validate and transform command arguments with custom validators and parsers
+* **Powerful Validation**: Validate and transform command arguments with a single `validate` function
 * **Minimal Bundle Size**: Extremely small footprint with just two lightweight dependencies
 * **Interceptors**: Add cross-cutting concerns like authentication or logging across multiple commands
 * **Structured Error Handling**: Consistent error handling for validation and runtime errors
@@ -154,15 +155,15 @@ const scanSectorCommand = defineCommand({
       alias: "p",
       validate: (value) => {
         const power = parseFloat(value);
-        return !isNaN(power) && power >= 1.0 && power <= 10.0;
-      },
-      parse: (value) => parseFloat(value)
+        if (isNaN(power) || power < 1.0 || power > 10.0) return false;
+        return power;
+      }
     }),
     defineOption({
       name: "coordinates",
       description: "Sector coordinates (comma-separated: x,y)",
       alias: "c",
-      parse: (value) => value.split(',').map(coord => parseInt(coord.trim()))
+      validate: (value) => value.split(',').map(coord => parseInt(coord.trim()))
     })
   ],
   run: ({ power, coordinates }) => {
@@ -172,6 +173,48 @@ const scanSectorCommand = defineCommand({
   }
 });
 ```
+
+### Using with Zod (or any schema library)
+
+The `validate` function works with any schema library out of the box — no adapters, no plugins. If it can parse a string and throw on failure, it works:
+
+```typescript
+import { z } from "zod";
+
+const deployCommand = defineCommand({
+  name: "deploy",
+  description: "Deploy to target environment",
+  arguments: [
+    defineArgument({
+      name: "environment",
+      required: true,
+      validate: (value) => z.enum(["staging", "production"]).parse(value)
+    })
+  ],
+  options: [
+    defineOption({
+      name: "port",
+      description: "Port number (1-65535)",
+      defaultValue: () => 3000,
+      validate: (value) => z.coerce.number().int().min(1).max(65535).parse(value)
+    }),
+    defineOption({
+      name: "replicas",
+      description: "Number of replicas",
+      validate: (value) => z.coerce.number().positive().parse(value)
+    })
+  ],
+  run: ({ environment, port, replicas }) => {
+    console.log(`Deploying to ${environment} on port ${port} with ${replicas} replicas`);
+  }
+});
+```
+
+This works because:
+- If `validate` **returns a value**, cmdore uses it as the parsed result
+- If `validate` **throws**, cmdore surfaces the error message directly
+
+The same pattern applies to **Valibot**, **ArkType**, **Superstruct**, or any other schema library.
 
 ### How --quiet & --verbose works
 

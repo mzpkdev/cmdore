@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { CmdoreError } from "../errors"
 import Argument, { defineArgument } from "./Argument"
 
 describe("Argument.parse", () => {
@@ -27,19 +28,37 @@ describe("Argument.parse", () => {
     })
 
     describe("when value is provided", () => {
-        it("should return raw value when no parse function exists", async () => {
+        it("should return raw value when no validate function exists", async () => {
             const argument = { name: "target" }
             const result = await Argument.parse(argument, "production")
             expect(result).toStrictEqual("production")
         })
 
-        it("should use the parse function when defined", async () => {
+        it("should use validate return value as transformed result", async () => {
             const argument = {
                 name: "port",
-                parse: (value: string) => parseInt(value, 10)
+                validate: (value: string) => parseInt(value, 10)
             }
             const result = await Argument.parse(argument, "8080")
             expect(result).toStrictEqual(8080)
+        })
+
+        it("should treat 0 as a valid transform result", async () => {
+            const argument = {
+                name: "count",
+                validate: (value: string) => parseInt(value, 10)
+            }
+            const result = await Argument.parse(argument, "0")
+            expect(result).toStrictEqual(0)
+        })
+
+        it("should treat empty string as a valid transform result", async () => {
+            const argument = {
+                name: "tag",
+                validate: (_value: string) => ""
+            }
+            const result = await Argument.parse(argument, "something")
+            expect(result).toStrictEqual("")
         })
     })
 
@@ -86,21 +105,37 @@ describe("Argument.parse", () => {
             )
         })
 
-        it("should run validate before parse", async () => {
-            const calls: string[] = []
+        it("should support async validate returning transformed value", async () => {
+            const argument = {
+                name: "port",
+                validate: async (value: string) => parseInt(value, 10)
+            }
+            const result = await Argument.parse(argument, "8080")
+            expect(result).toStrictEqual(8080)
+        })
+
+        it("should wrap thrown errors in CmdoreError", async () => {
             const argument = {
                 name: "target",
                 validate: () => {
-                    calls.push("validate")
-                    return true
-                },
-                parse: (_value: string) => {
-                    calls.push("parse")
-                    return "parsed"
+                    throw new Error("boom")
                 }
             }
-            await Argument.parse(argument, "production")
-            expect(calls).toStrictEqual(["validate", "parse"])
+            await expect(
+                Argument.parse(argument, "production")
+            ).rejects.toThrowError(`boom`)
+        })
+
+        it("should not double-wrap CmdoreError", async () => {
+            const argument = {
+                name: "target",
+                validate: () => {
+                    throw new CmdoreError("custom error")
+                }
+            }
+            await expect(
+                Argument.parse(argument, "production")
+            ).rejects.toThrowError("custom error")
         })
     })
 })
@@ -129,7 +164,7 @@ describe("Argument.parseVariadic", () => {
         expect(result).toStrictEqual(["README.md"])
     })
 
-    it("should return raw values array when no parse function exists", async () => {
+    it("should return raw values array when no validate function exists", async () => {
         const argument = { name: "files", variadic: true }
         const result = await Argument.parseVariadic(argument, [
             "a.ts",
@@ -139,11 +174,12 @@ describe("Argument.parseVariadic", () => {
         expect(result).toStrictEqual(["a.ts", "b.ts", "c.ts"])
     })
 
-    it("should use the parse function when defined", async () => {
+    it("should use validate return value as transformed result", async () => {
         const argument = {
             name: "files",
             variadic: true,
-            parse: (...values: string[]) => values.map((v) => v.toUpperCase())
+            validate: (...values: string[]) =>
+                values.map((v) => v.toUpperCase())
         }
         const result = await Argument.parseVariadic(argument, ["a.ts", "b.ts"])
         expect(result).toStrictEqual(["A.TS", "B.TS"])

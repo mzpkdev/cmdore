@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { CmdoreError } from "../errors"
 import Option, { defineOption } from "./Option"
 
 describe("Option.parse", () => {
@@ -24,28 +25,37 @@ describe("Option.parse", () => {
     })
 
     describe("when values are provided", () => {
-        it("should return raw values when no parse function exists", async () => {
+        it("should return raw values when no validate function exists", async () => {
             const option = { name: "host" }
             const result = await Option.parse(option, ["localhost"])
             expect(result).toStrictEqual(["localhost"])
         })
 
-        it("should use the parse function when defined", async () => {
+        it("should use validate return value as transformed result", async () => {
             const option = {
                 name: "port",
-                parse: (...values: string[]) => parseInt(values[0], 10)
+                validate: (...values: string[]) => parseInt(values[0], 10)
             }
             const result = await Option.parse(option, ["8080"])
             expect(result).toStrictEqual(8080)
         })
 
-        it("should pass all values to the parse function", async () => {
+        it("should pass all values to the validate function", async () => {
             const option = {
                 name: "tags",
-                parse: (...values: string[]) => values.join(",")
+                validate: (...values: string[]) => values.join(",")
             }
             const result = await Option.parse(option, ["a", "b", "c"])
             expect(result).toStrictEqual("a,b,c")
+        })
+
+        it("should treat 0 as a valid transform result", async () => {
+            const option = {
+                name: "count",
+                validate: (...values: string[]) => parseInt(values[0], 10)
+            }
+            const result = await Option.parse(option, ["0"])
+            expect(result).toStrictEqual(0)
         })
     })
 
@@ -88,21 +98,28 @@ describe("Option.parse", () => {
             )
         })
 
-        it("should run validate before parse", async () => {
-            const calls: string[] = []
+        it("should wrap thrown errors in CmdoreError", async () => {
             const option = {
                 name: "port",
                 validate: () => {
-                    calls.push("validate")
-                    return true
-                },
-                parse: (..._values: string[]) => {
-                    calls.push("parse")
-                    return "parsed"
+                    throw new Error("boom")
                 }
             }
-            await Option.parse(option, ["8080"])
-            expect(calls).toStrictEqual(["validate", "parse"])
+            await expect(Option.parse(option, ["8080"])).rejects.toThrowError(
+                `boom`
+            )
+        })
+
+        it("should not double-wrap CmdoreError", async () => {
+            const option = {
+                name: "port",
+                validate: () => {
+                    throw new CmdoreError("custom error")
+                }
+            }
+            await expect(Option.parse(option, ["8080"])).rejects.toThrowError(
+                "custom error"
+            )
         })
     })
 })

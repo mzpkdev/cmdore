@@ -10,8 +10,9 @@ type Argument<
     required?: boolean
     variadic?: TVariadic
     defaultValue?: () => TValue
-    validate?: (...values: string[]) => void | boolean | Promise<unknown>
-    parse?: (...values: string[]) => TValue
+    validate?: (
+        ...values: string[]
+    ) => TValue | void | boolean | Promise<TValue | void | boolean>
 }
 
 namespace Argument {
@@ -27,13 +28,19 @@ namespace Argument {
             }
             return argument.defaultValue?.()
         }
-        if ((await argument.validate?.(value)) === false) {
+        let result: Awaited<ReturnType<NonNullable<Argument["validate"]>>>
+        try {
+            result = await argument.validate?.(value)
+        } catch (error) {
+            throw new CmdoreError((error as Error).message)
+        }
+        if (result === false) {
             throw new CmdoreError(
                 `An argument "${argument.name}" does not accept "${value}" as a value.`
             )
         }
-        if (argument.parse) {
-            return argument.parse(value)
+        if (result !== true && result !== undefined) {
+            return result
         }
         return value
     }
@@ -50,13 +57,19 @@ namespace Argument {
             }
             return argument.defaultValue?.()
         }
-        if ((await argument.validate?.(...values)) === false) {
+        let result: Awaited<ReturnType<NonNullable<Argument["validate"]>>>
+        try {
+            result = await argument.validate?.(...values)
+        } catch (error) {
+            throw new CmdoreError((error as Error).message)
+        }
+        if (result === false) {
             throw new CmdoreError(
                 `An argument "${argument.name}" does not accept "${values.join(" ")}" as a value.`
             )
         }
-        if (argument.parse) {
-            return argument.parse(...values)
+        if (result !== true && result !== undefined) {
+            return result
         }
         return values
     }

@@ -17,8 +17,11 @@ const deploy = defineCommand({
             name: "port",
             description: "Port number",
             defaultValue: () => 3000,
-            validate: (value) => parseInt(value, 10) > 0,
-            parse: (value) => parseInt(value, 10)
+            validate: (value) => {
+                const port = parseInt(value, 10)
+                if (port <= 0) return false
+                return port
+            }
         }
     ],
     run({ environment, port }) {

@@ -10,7 +10,7 @@ const list = defineCommand({
             alias: "l",
             description: "Number of items to return",
             defaultValue: () => 3,
-            parse: (value) => parseInt(value, 10)
+            validate: (value) => parseInt(value, 10)
         })
     ],
     async *run({ limit }) {

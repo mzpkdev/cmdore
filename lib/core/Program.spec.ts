@@ -233,13 +233,13 @@ describe("Program.execute", () => {
             )
         })
 
-        it("should use parse function result in argv", async () => {
+        it("should use validate function result in argv", async () => {
             let received: unknown = null
             const program = new Program({ colors: false, metadata })
             program.register({
                 name: "serve",
                 options: [
-                    { name: "port", parse: (v: string) => parseInt(v, 10) }
+                    { name: "port", validate: (v: string) => parseInt(v, 10) }
                 ],
                 run(argv: any) {
                     received = argv
@@ -381,13 +381,13 @@ describe("positional arguments", () => {
         expect(received).toStrictEqual({ target: "production" })
     })
 
-    it("should use parse function for positional argument", async () => {
+    it("should use validate function for positional argument", async () => {
         let received: unknown = null
         const program = new Program({ colors: false, metadata })
         program.register({
             name: "scale",
             arguments: [
-                { name: "count", parse: (v: string) => parseInt(v, 10) }
+                { name: "count", validate: (v: string) => parseInt(v, 10) }
             ],
             run(argv: any) {
                 received = argv

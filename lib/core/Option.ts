@@ -7,8 +7,9 @@ type Option<TName = string, TValue = string> = {
     arity?: number
     required?: boolean
     defaultValue?: () => TValue
-    validate?: (...values: string[]) => void | boolean | Promise<unknown>
-    parse?: (...values: string[]) => TValue
+    validate?: (
+        ...values: string[]
+    ) => TValue | void | boolean | Promise<TValue | void | boolean>
     [property: string]: unknown
 }
 
@@ -23,13 +24,19 @@ namespace Option {
             }
             return option.defaultValue?.()
         }
-        if ((await option.validate?.(...values)) === false) {
+        let result: Awaited<ReturnType<NonNullable<Option["validate"]>>>
+        try {
+            result = await option.validate?.(...values)
+        } catch (error) {
+            throw new CmdoreError((error as Error).message)
+        }
+        if (result === false) {
             throw new CmdoreError(
                 `An option "${option.name}" does not accept "${values.join(" ")}" as an argument.`
             )
         }
-        if (option.parse) {
-            return option.parse(...values)
+        if (result !== true && result !== undefined) {
+            return result
         }
         return values
     }
