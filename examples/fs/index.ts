@@ -1,10 +1,4 @@
-import {
-    defineArgument,
-    defineCommand,
-    defineOption,
-    type Metadata,
-    Program
-} from "cmdore"
+import { defineArgument, defineCommand, defineOption, Program } from "cmdore"
 
 const copy = defineCommand({
     name: "copy",
@@ -54,7 +48,7 @@ const remove = defineCommand({
     }
 })
 
-export const createProgram = (metadata?: Metadata) =>
-    new Program({ colors: false, metadata }).register(copy).register(remove)
+export const createProgram = () =>
+    new Program({ colors: false }).register(copy).register(remove)
 
 createProgram().execute()

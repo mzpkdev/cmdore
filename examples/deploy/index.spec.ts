@@ -2,12 +2,6 @@ import { effect } from "cmdore"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { createProgram } from "./index"
 
-const metadata = {
-    name: "deploy",
-    version: "0.0.0",
-    description: "A deploy CLI"
-}
-
 afterEach(() => {
     effect.enabled = true
 })
@@ -20,12 +14,7 @@ describe("deploy", () => {
             .mockImplementation((...args: any[]) => {
                 output.push(String(args[0]))
             })
-        await createProgram(metadata).execute([
-            "deploy",
-            "staging",
-            "--port",
-            "8080"
-        ])
+        await createProgram().execute(["deploy", "staging", "--port", "8080"])
         spy.mockRestore()
         expect(output).toContain("Deploying to staging on port 8080...")
         expect(output).toContain("Deployment to staging complete.")
@@ -38,14 +27,14 @@ describe("deploy", () => {
             .mockImplementation((...args: any[]) => {
                 output.push(String(args[0]))
             })
-        await createProgram(metadata).execute(["deploy", "production"])
+        await createProgram().execute(["deploy", "production"])
         spy.mockRestore()
         expect(output).toContain("Deploying to production on port 3000...")
     })
 
     it("should reject invalid environment", async () => {
         await expect(
-            createProgram(metadata).execute(["deploy", "dev"])
+            createProgram().execute(["deploy", "dev"])
         ).rejects.toThrowError(
             'An argument "environment" does not accept "dev" as a value.'
         )
@@ -53,12 +42,7 @@ describe("deploy", () => {
 
     it("should reject invalid port", async () => {
         await expect(
-            createProgram(metadata).execute([
-                "deploy",
-                "staging",
-                "--port",
-                "0"
-            ])
+            createProgram().execute(["deploy", "staging", "--port", "0"])
         ).rejects.toThrowError(
             'An option "port" does not accept "0" as an argument.'
         )
@@ -71,11 +55,7 @@ describe("deploy", () => {
             .mockImplementation((...args: any[]) => {
                 output.push(String(args[0]))
             })
-        await createProgram(metadata).execute([
-            "deploy",
-            "staging",
-            "--dry-run"
-        ])
+        await createProgram().execute(["deploy", "staging", "--dry-run"])
         spy.mockRestore()
         expect(output).toContain("Deploying to staging on port 3000...")
         expect(output).not.toContain("Deployment to staging complete.")

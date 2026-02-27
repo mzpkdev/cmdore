@@ -1,4 +1,4 @@
-import { defineCommand, defineOption, type Metadata, Program } from "cmdore"
+import { defineCommand, defineOption, Program } from "cmdore"
 
 const list = defineCommand({
     name: "list",
@@ -22,7 +22,6 @@ const list = defineCommand({
     }
 })
 
-export const createProgram = (metadata?: Metadata) =>
-    new Program({ colors: false, metadata }).register(list)
+export const createProgram = () => new Program({ colors: false }).register(list)
 
 createProgram().execute()

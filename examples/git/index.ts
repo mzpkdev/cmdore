@@ -1,4 +1,4 @@
-import { defineCommand, defineOption, type Metadata, Program } from "cmdore"
+import { defineCommand, defineOption, Program } from "cmdore"
 
 const tokenOption = defineOption({
     name: "token",
@@ -36,8 +36,8 @@ const status = defineCommand({
     }
 })
 
-export const createProgram = (metadata?: Metadata) => {
-    const program = new Program({ colors: false, metadata })
+export const createProgram = () => {
+    const program = new Program({ colors: false })
     program.intercept([tokenOption], async (argv) => {
         return {
             ...(argv as Record<string, unknown>),
