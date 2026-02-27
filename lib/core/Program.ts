@@ -167,7 +167,7 @@ class Program {
         return this
     }
 
-    async execute(argv: string[]): Promise<void> {
+    async execute(argv: string[] = process.argv.slice(2)): Promise<void> {
         const [main] = argv
         const command = this.#_commands.get(main)
         const options = command?.options ?? []

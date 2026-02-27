@@ -1,6 +1,6 @@
 import { CmdoreError } from "../errors"
 
-type Argument<TName = string, TValue = unknown> = {
+type Argument<TName = string, TValue = string> = {
     name: TName
     description?: string
     required?: boolean
@@ -58,7 +58,7 @@ namespace Argument {
     }
 }
 
-export const defineArgument = <TName extends string, TValue>(
+export const defineArgument = <TName extends string, TValue = string>(
     argument: Argument<TName, TValue>
 ): Argument<TName, TValue> => argument
 

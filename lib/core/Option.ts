@@ -1,6 +1,6 @@
 import { CmdoreError } from "../errors"
 
-type Option<TName = string, TValue = unknown> = {
+type Option<TName = string, TValue = string> = {
     name: TName
     description?: string
     alias?: string
@@ -35,7 +35,7 @@ namespace Option {
     }
 }
 
-export const defineOption = <TName extends string, TValue>(
+export const defineOption = <TName extends string, TValue = string>(
     option: Option<TName, TValue>
 ): Option<TName, TValue> => option
 

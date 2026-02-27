@@ -9,5 +9,6 @@
         "noUnusedParameters": false,
         "outDir": "./dist"
     },
-    "include": ["."]
+    "include": ["."],
+    "exclude": []
 }

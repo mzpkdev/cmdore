@@ -1,4 +1,4 @@
-import { Program, defineCommand, defineOption, defineArgument } from "cmdore"
+import { defineArgument, defineCommand, defineOption, Program } from "cmdore"
 
 const make = defineCommand({
     name: "make",
@@ -7,24 +7,21 @@ const make = defineCommand({
         defineArgument({
             name: "type",
             required: true,
-            description: "Coffee type (espresso, americano, latte, ...)",
-        }),
+            description: "Coffee type (espresso, americano, latte, ...)"
+        })
     ],
     options: [
         defineOption({
             name: "size",
             alias: "s",
             description: "Cup size (small, medium, large)",
-            defaultValue: () => "medium",
-            parse: (value) => value,
-        }),
+            defaultValue: () => "medium"
+        })
     ],
     run({ type, size }) {
         console.log(`Brewing a ${size} ${type}...`)
         console.log("Done. Enjoy your coffee.")
-    },
+    }
 })
 
-const program = new Program()
-program.register(make)
-program.execute(process.argv.slice(2))
+new Program().register(make).execute()
