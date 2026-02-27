@@ -285,3 +285,133 @@ describe("Program constructor", () => {
         expect(console.log).toStrictEqual(originalLog)
     })
 })
+
+
+describe("positional arguments", () => {
+    it("should pass positional argument to run", async () => {
+        let received: unknown = null
+        const program = new Program({ colors: false })
+        program.register({
+            name: "deploy",
+            arguments: [{ name: "target" }],
+            run(argv: any) { received = argv }
+        })
+        await program.execute(["deploy", "production"])
+        expect(received).toStrictEqual({ target: "production" })
+    })
+
+    it("should pass multiple positional arguments to run", async () => {
+        let received: unknown = null
+        const program = new Program({ colors: false })
+        program.register({
+            name: "deploy",
+            arguments: [{ name: "target" }, { name: "environment" }],
+            run(argv: any) { received = argv }
+        })
+        await program.execute(["deploy", "app", "staging"])
+        expect(received).toStrictEqual({ target: "app", environment: "staging" })
+    })
+
+    it("should throw when required positional argument is missing", async () => {
+        const program = new Program({ colors: false })
+        program.register({
+            name: "deploy",
+            arguments: [{ name: "target", required: true }]
+        })
+        await expect(program.execute(["deploy"]))
+            .rejects.toThrowError(`An argument "target" is required.`)
+    })
+
+    it("should use defaultValue when positional argument is absent", async () => {
+        let received: unknown = null
+        const program = new Program({ colors: false })
+        program.register({
+            name: "deploy",
+            arguments: [{ name: "target", defaultValue: () => "production" }],
+            run(argv: any) { received = argv }
+        })
+        await program.execute(["deploy"])
+        expect(received).toStrictEqual({ target: "production" })
+    })
+
+    it("should use parse function for positional argument", async () => {
+        let received: unknown = null
+        const program = new Program({ colors: false })
+        program.register({
+            name: "scale",
+            arguments: [{ name: "count", parse: (v: string) => parseInt(v, 10) }],
+            run(argv: any) { received = argv }
+        })
+        await program.execute(["scale", "5"])
+        expect(received).toStrictEqual({ count: 5 })
+    })
+
+    it("should collect remaining operands for variadic argument", async () => {
+        let received: unknown = null
+        const program = new Program({ colors: false })
+        program.register({
+            name: "rm",
+            arguments: [{ name: "files", variadic: true }],
+            run(argv: any) { received = argv }
+        })
+        await program.execute(["rm", "a.ts", "b.ts", "c.ts"])
+        expect(received).toStrictEqual({ files: ["a.ts", "b.ts", "c.ts"] })
+    })
+
+    it("should support mixed positional and variadic arguments", async () => {
+        let received: unknown = null
+        const program = new Program({ colors: false })
+        program.register({
+            name: "cp",
+            arguments: [
+                { name: "destination" },
+                { name: "files", variadic: true }
+            ],
+            run(argv: any) { received = argv }
+        })
+        await program.execute(["cp", "dist/", "a.ts", "b.ts"])
+        expect(received).toStrictEqual({ destination: "dist/", files: ["a.ts", "b.ts"] })
+    })
+
+    it("should merge positional arguments with named options", async () => {
+        let received: unknown = null
+        const program = new Program({ colors: false })
+        program.register({
+            name: "deploy",
+            arguments: [{ name: "target" }],
+            options: [{ name: "force", arity: 0 }],
+            run(argv: any) { received = argv }
+        })
+        await program.execute(["deploy", "production", "--force"])
+        expect(received).toStrictEqual({ target: "production", force: [] })
+    })
+
+    it("should throw when variadic argument is not the last", () => {
+        const program = new Program({ colors: false })
+        expect(() => program.register({
+            name: "bad",
+            arguments: [
+                { name: "files", variadic: true },
+                { name: "target" }
+            ]
+        })).toThrowError(`A variadic argument "files" must be the last argument.`)
+    })
+
+    it("should show arguments in help output", async () => {
+        const program = new Program({ colors: false })
+        program.register({
+            name: "deploy",
+            arguments: [
+                { name: "target", required: true, description: "Deploy target" },
+                { name: "environment", description: "Target environment" }
+            ]
+        })
+        const spy = vi.spyOn(console, "log").mockImplementation(() => {})
+        await program.execute(["deploy", "--help"])
+        const output = spy.mock.calls.map(call => String(call[0])).join("\n")
+        spy.mockRestore()
+        expect(output).toContain("<target>")
+        expect(output).toContain("[environment]")
+        expect(output).toContain("ARGUMENTS")
+    })
+})
