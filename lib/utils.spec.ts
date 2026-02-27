@@ -1,6 +1,5 @@
-import { describe, it, expect } from "vitest"
-import { isIterable, isAsyncIterable } from "./utils"
-
+import { describe, expect, it } from "vitest"
+import { isAsyncIterable, isIterable } from "./utils"
 
 describe("isIterable", () => {
     it("should return true for arrays", () => {
@@ -20,7 +19,11 @@ describe("isIterable", () => {
     })
 
     it("should return true for custom iterables", () => {
-        const obj = { [Symbol.iterator]: function* () { yield 1 } }
+        const obj = {
+            [Symbol.iterator]: function* () {
+                yield 1
+            }
+        }
         expect(isIterable(obj)).toStrictEqual(true)
     })
 
@@ -46,15 +49,20 @@ describe("isIterable", () => {
     })
 })
 
-
 describe("isAsyncIterable", () => {
     it("should return true for async generator objects", () => {
-        async function* gen() { yield 1 }
+        async function* gen() {
+            yield 1
+        }
         expect(isAsyncIterable(gen())).toStrictEqual(true)
     })
 
     it("should return true for custom async iterables", () => {
-        const obj = { [Symbol.asyncIterator]: async function* () { yield 1 } }
+        const obj = {
+            [Symbol.asyncIterator]: async function* () {
+                yield 1
+            }
+        }
         expect(isAsyncIterable(obj)).toStrictEqual(true)
     })
 

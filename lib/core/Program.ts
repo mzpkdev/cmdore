@@ -1,13 +1,13 @@
-import pkg, { Metadata } from "pkginspect"
-import log, { bold, dim } from "logtint"
 import argvex from "argvex"
+import log, { bold, dim } from "logtint"
+import pkg, { type Metadata } from "pkginspect"
 import { CmdoreError } from "../errors"
-import { isAsyncIterable, isIterable } from "../utils"
 import { colorConsoleLog, effect, mock } from "../tools"
-import Option from "./Option"
+import { isAsyncIterable, isIterable } from "../utils"
 import Argument from "./Argument"
-import Command, { Argv } from "./Command"
-
+import type Command from "./Command"
+import type { Argv } from "./Command"
+import Option from "./Option"
 
 export type Configuration = {
     colors: boolean
@@ -16,9 +16,7 @@ export type Configuration = {
 class Program {
     #_metadata: Metadata | undefined
     #_commands = new Map<string, Command>()
-    #_interceptors = new Set<
-        [ (argv: Argv) => Promise<Argv | void>, Option[] ]
-    >()
+    #_interceptors = new Set<[(argv: Argv) => Promise<Argv | void>, Option[]]>()
 
     get metadata(): Metadata {
         if (this.#_metadata == null) {
@@ -39,18 +37,25 @@ class Program {
         dependencies: TOptionArray,
         interceptor: (argv: Argv<TOptionArray>) => Promise<Argv | void>
     ): this {
-        this.#_interceptors.add([ interceptor, dependencies ])
+        this.#_interceptors.add([
+            interceptor as (argv: Argv) => Promise<Argv | void>,
+            dependencies
+        ])
         return this
     }
 
-    register<TOptionArray extends Option[], TArgumentArray extends Argument[]>(command: Command<TOptionArray, TArgumentArray>): this {
+    register<TOptionArray extends Option[], TArgumentArray extends Argument[]>(
+        command: Command<TOptionArray, TArgumentArray>
+    ): this {
         const args = command.arguments ?? []
         for (let i = 0; i < args.length; i++) {
             if (args[i].variadic && i !== args.length - 1) {
-                throw new CmdoreError(`A variadic argument "${args[i].name}" must be the last argument.`)
+                throw new CmdoreError(
+                    `A variadic argument "${args[i].name}" must be the last argument.`
+                )
             }
         }
-        this.#_commands.set(command.name, command as any)
+        this.#_commands.set(command.name, command as unknown as Command)
         return this
     }
 
@@ -64,9 +69,12 @@ class Program {
             log`  ${name} <command> [options]`
             log``
             log`${bold(dim`COMMANDS`)}`
-            const man: readonly [ string, string ][] = Array.from(this.#_commands.values())
-                .map(command => ([ command.name, command.description ?? "" ] as const))
-            for (const [ left, right ] of man) {
+            const man: readonly [string, string][] = Array.from(
+                this.#_commands.values()
+            ).map(
+                (command) => [command.name, command.description ?? ""] as const
+            )
+            for (const [left, right] of man) {
                 log`  ${left.padEnd(48, " ")}  ${right}`
             }
             log``
@@ -74,12 +82,17 @@ class Program {
         }
         log`${bold(dim`USAGE`)}`
         const argsSummary = (command.arguments ?? [])
-            .map(arg => {
+            .map((arg) => {
                 const label = arg.variadic ? `${arg.name}...` : arg.name
                 return arg.required ? `<${label}>` : `[${label}]`
             })
             .join(" ")
-        const usageParts = [name, command.name, argsSummary, "[options]"].filter(Boolean)
+        const usageParts = [
+            name,
+            command.name,
+            argsSummary,
+            "[options]"
+        ].filter(Boolean)
         log`  ${usageParts.join(" ")}`
         log``
         if (command.arguments?.length) {
@@ -95,41 +108,46 @@ class Program {
                     const defaultValue = arg.defaultValue()
                     info = `(${JSON.stringify(defaultValue)})`
                 }
-                const right = arg.description ? `${arg.description} ${info}`.trim() : info
+                const right = arg.description
+                    ? `${arg.description} ${info}`.trim()
+                    : info
                 log`  ${left.padEnd(48, " ")}  ${right}`
             }
             log``
         }
         log`${bold(dim`OPTIONS`)}`
-        const man: string[][] = (command.options ?? [])
-            .map(option => {
-                const flags = option.alias
-                    ? `-${option.alias}, --${option.name}` : `--${option.name}`.padStart(4, " ")
-                const args = ""
-                let info = ""
-                if (option.required) {
-                    info = "(required)"
-                }
-                if (option.defaultValue) {
-                    const defaultValue = option.defaultValue()
-                    info = `(${JSON.stringify(defaultValue)})`
-                }
-                const left = `${flags}\t${args}`
-                const right = `${option.description} (${info})`
-                return [ left, right ]
-            })
-        for (const [ left, right ] of man) {
+        const man: string[][] = (command.options ?? []).map((option) => {
+            const flags = option.alias
+                ? `-${option.alias}, --${option.name}`
+                : `--${option.name}`.padStart(4, " ")
+            const args = ""
+            let info = ""
+            if (option.required) {
+                info = "(required)"
+            }
+            if (option.defaultValue) {
+                const defaultValue = option.defaultValue()
+                info = `(${JSON.stringify(defaultValue)})`
+            }
+            const left = `${flags}\t${args}`
+            const right = `${option.description} (${info})`
+            return [left, right]
+        })
+        for (const [left, right] of man) {
             log`  ${left.padEnd(48, " ")}  ${right}`
         }
         const builtin = [
-            [ "    --quiet", "suppress any output" ],
-            [ "    --verbose", "enable verbose output" ],
-            [ "    --json", "enable JSON output" ],
-            [ "    --dry-run", "simulate the command without executing anything" ],
-            [ "-v, --version", "show version" ],
-            [ "-h, --help", "show information for program or the command" ],
+            ["    --quiet", "suppress any output"],
+            ["    --verbose", "enable verbose output"],
+            ["    --json", "enable JSON output"],
+            [
+                "    --dry-run",
+                "simulate the command without executing anything"
+            ],
+            ["-v, --version", "show version"],
+            ["-h, --help", "show information for program or the command"]
         ]
-        for (const [ left, right ] of builtin) {
+        for (const [left, right] of builtin) {
             log`  ${dim(left.padEnd(48, " "))}  ${dim(right)}`
         }
         if (command.examples) {
@@ -150,7 +168,7 @@ class Program {
     }
 
     async execute(argv: string[]): Promise<void> {
-        const [ main ] = argv
+        const [main] = argv
         const command = this.#_commands.get(main)
         const options = command?.options ?? []
         const schema = [
@@ -160,11 +178,18 @@ class Program {
             { name: "quiet", arity: 0 },
             { name: "json", arity: 0 },
             { name: "dry-run", arity: 0 },
-            ...options.map(({ name, alias, arity }) => (
-                { name, alias, arity: arity ?? Infinity }
-            ))
+            ...options.map(({ name, alias, arity }) => ({
+                name,
+                alias,
+                arity: arity ?? Infinity
+            }))
         ]
-        const { _: operands, ...flags } = argvex({ argv, schema, strict: true, override: true })
+        const { _: operands, ...flags } = argvex({
+            argv,
+            schema,
+            strict: true,
+            override: true
+        })
         if (flags.help || main == null) {
             this.help(command)
             return
@@ -181,7 +206,8 @@ class Program {
         }
         let argv2: Argv = {}
         for (const option of command.options ?? []) {
-            const values: string[] | undefined = flags[option.alias ?? option.name] ?? flags[option.name]
+            const values: string[] | undefined =
+                flags[option.alias ?? option.name] ?? flags[option.name]
             argv2[option.name] = await Option.parse(option, values)
         }
         const args = command.arguments ?? []
@@ -189,18 +215,21 @@ class Program {
         for (let i = 0; i < args.length; i++) {
             const argument = args[i]
             if (argument.variadic) {
-                argv2[argument.name] = await Argument.parseVariadic(argument, positionalOperands.slice(i))
+                argv2[argument.name] = await Argument.parseVariadic(
+                    argument,
+                    positionalOperands.slice(i)
+                )
             } else {
-                argv2[argument.name] = await Argument.parse(argument, positionalOperands[i])
+                argv2[argument.name] = await Argument.parse(
+                    argument,
+                    positionalOperands[i]
+                )
             }
         }
         const log = console.log.bind(console)
         const mocked = []
         if (!flags.verbose || flags.json) {
-            mocked.push(
-                mock(console, "debug"),
-                mock(console, "info")
-            )
+            mocked.push(mock(console, "debug"), mock(console, "info"))
         }
         if (flags.quiet || flags.json) {
             mocked.push(
@@ -209,9 +238,9 @@ class Program {
                 mock(console, "error")
             )
         }
-        for (const [ interceptor, dependencies ] of this.#_interceptors) {
-            if (dependencies.every(dependency => dependency.name in argv2)) {
-                argv2 = await interceptor(argv2) ?? argv2
+        for (const [interceptor, dependencies] of this.#_interceptors) {
+            if (dependencies.every((dependency) => dependency.name in argv2)) {
+                argv2 = (await interceptor(argv2)) ?? argv2
             }
         }
         const output = await command.run?.(argv2)
@@ -227,6 +256,5 @@ class Program {
         }
     }
 }
-
 
 export default Program

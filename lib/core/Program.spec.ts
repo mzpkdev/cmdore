@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import { effect } from "../tools"
 
 vi.mock("pkginspect", () => ({
@@ -17,7 +17,6 @@ vi.mock("pkginspect", () => ({
 
 const { default: Program } = await import("./Program")
 
-
 describe("Program.register", () => {
     it("should return this for chaining", () => {
         const program = new Program({ colors: false })
@@ -28,21 +27,31 @@ describe("Program.register", () => {
     it("should register multiple commands", async () => {
         const program = new Program({ colors: false })
         const ran: string[] = []
-        program.register({ name: "build", run: () => { ran.push("build") } })
-        program.register({ name: "test", run: () => { ran.push("test") } })
+        program.register({
+            name: "build",
+            run: () => {
+                ran.push("build")
+            }
+        })
+        program.register({
+            name: "test",
+            run: () => {
+                ran.push("test")
+            }
+        })
         await program.execute(["build"])
         await program.execute(["test"])
         expect(ran).toStrictEqual(["build", "test"])
     })
 })
 
-
 describe("Program.execute", () => {
     describe("command dispatch", () => {
         it("should throw when command does not exist", async () => {
             const program = new Program({ colors: false })
-            await expect(program.execute(["nonexistent"]))
-                .rejects.toThrowError(`A command "nonexistent" does not exist.`)
+            await expect(program.execute(["nonexistent"])).rejects.toThrowError(
+                `A command "nonexistent" does not exist.`
+            )
         })
 
         it("should call the run function with parsed argv", async () => {
@@ -51,7 +60,9 @@ describe("Program.execute", () => {
             program.register({
                 name: "serve",
                 options: [{ name: "port" }],
-                run(argv: any) { received = argv }
+                run(argv: any) {
+                    received = argv
+                }
             })
             await program.execute(["serve", "--port", "3000"])
             expect(received).toStrictEqual({ port: ["3000"] })
@@ -60,7 +71,12 @@ describe("Program.execute", () => {
         it("should call run with empty argv when command has no options", async () => {
             let ran = false
             const program = new Program({ colors: false })
-            program.register({ name: "ping", run: () => { ran = true } })
+            program.register({
+                name: "ping",
+                run: () => {
+                    ran = true
+                }
+            })
             await program.execute(["ping"])
             expect(ran).toStrictEqual(true)
         })
@@ -69,7 +85,10 @@ describe("Program.execute", () => {
     describe("--help flag", () => {
         it("should not throw when --help is passed", async () => {
             const program = new Program({ colors: false })
-            program.register({ name: "build", description: "Build the project" })
+            program.register({
+                name: "build",
+                description: "Build the project"
+            })
             const spy = vi.spyOn(console, "log").mockImplementation(() => {})
             await program.execute(["--help"])
             spy.mockRestore()
@@ -85,7 +104,10 @@ describe("Program.execute", () => {
 
         it("should show command-specific help", async () => {
             const program = new Program({ colors: false })
-            program.register({ name: "build", options: [{ name: "watch", arity: 0 }] })
+            program.register({
+                name: "build",
+                options: [{ name: "watch", arity: 0 }]
+            })
             const spy = vi.spyOn(console, "log").mockImplementation(() => {})
             await program.execute(["build", "--help"])
             expect(spy).toHaveBeenCalled()
@@ -111,7 +133,9 @@ describe("Program.execute", () => {
             program.register({
                 name: "deploy",
                 run: () => {
-                    effect(() => { effectCallbackRan = true })
+                    effect(() => {
+                        effectCallbackRan = true
+                    })
                 }
             })
             await program.execute(["deploy", "--dry-run"])
@@ -124,12 +148,16 @@ describe("Program.execute", () => {
         it("should suppress console.log during command execution", async () => {
             const program = new Program({ colors: false })
             const output: string[] = []
-            const spy = vi.spyOn(console, "log").mockImplementation((...args: any[]) => {
-                output.push(String(args[0]))
-            })
+            const spy = vi
+                .spyOn(console, "log")
+                .mockImplementation((...args: any[]) => {
+                    output.push(String(args[0]))
+                })
             program.register({
                 name: "greet",
-                run: () => { console.log("hello") }
+                run: () => {
+                    console.log("hello")
+                }
             })
             await program.execute(["greet", "--quiet"])
             spy.mockRestore()
@@ -145,9 +173,11 @@ describe("Program.execute", () => {
                 run: () => [{ id: 1 }, { id: 2 }]
             })
             const output: string[] = []
-            const spy = vi.spyOn(console, "log").mockImplementation((...args: any[]) => {
-                output.push(String(args[0]))
-            })
+            const spy = vi
+                .spyOn(console, "log")
+                .mockImplementation((...args: any[]) => {
+                    output.push(String(args[0]))
+                })
             await program.execute(["list", "--json"])
             spy.mockRestore()
             expect(output).toContain(JSON.stringify({ id: 1 }, null, 2))
@@ -164,9 +194,11 @@ describe("Program.execute", () => {
                 }
             })
             const output: string[] = []
-            const spy = vi.spyOn(console, "log").mockImplementation((...args: any[]) => {
-                output.push(String(args[0]))
-            })
+            const spy = vi
+                .spyOn(console, "log")
+                .mockImplementation((...args: any[]) => {
+                    output.push(String(args[0]))
+                })
             await program.execute(["stream", "--json"])
             spy.mockRestore()
             expect(output).toContain(JSON.stringify({ id: 1 }, null, 2))
@@ -181,7 +213,9 @@ describe("Program.execute", () => {
             program.register({
                 name: "serve",
                 options: [{ name: "port", alias: "p" }],
-                run(argv: any) { received = argv }
+                run(argv: any) {
+                    received = argv
+                }
             })
             await program.execute(["serve", "-p", "3000"])
             expect(received).toStrictEqual({ port: ["3000"] })
@@ -193,7 +227,9 @@ describe("Program.execute", () => {
             program.register({
                 name: "serve",
                 options: [{ name: "port", defaultValue: () => "8080" }],
-                run(argv: any) { received = argv }
+                run(argv: any) {
+                    received = argv
+                }
             })
             await program.execute(["serve"])
             expect(received).toStrictEqual({ port: "8080" })
@@ -205,8 +241,9 @@ describe("Program.execute", () => {
                 name: "deploy",
                 options: [{ name: "env", required: true }]
             })
-            await expect(program.execute(["deploy"]))
-                .rejects.toThrowError(`An option "env" is required.`)
+            await expect(program.execute(["deploy"])).rejects.toThrowError(
+                `An option "env" is required.`
+            )
         })
 
         it("should use parse function result in argv", async () => {
@@ -214,15 +251,18 @@ describe("Program.execute", () => {
             const program = new Program({ colors: false })
             program.register({
                 name: "serve",
-                options: [{ name: "port", parse: (v: string) => parseInt(v, 10) }],
-                run(argv: any) { received = argv }
+                options: [
+                    { name: "port", parse: (v: string) => parseInt(v, 10) }
+                ],
+                run(argv: any) {
+                    received = argv
+                }
             })
             await program.execute(["serve", "--port", "3000"])
             expect(received).toStrictEqual({ port: 3000 })
         })
     })
 })
-
 
 describe("Program.intercept", () => {
     it("should fire when all dependency options are present", async () => {
@@ -232,7 +272,11 @@ describe("Program.intercept", () => {
         program.intercept([tokenOption], async () => {
             intercepted = true
         })
-        program.register({ name: "deploy", options: [tokenOption], run: () => {} })
+        program.register({
+            name: "deploy",
+            options: [tokenOption],
+            run: () => {}
+        })
         await program.execute(["deploy", "--token", "abc"])
         expect(intercepted).toStrictEqual(true)
     })
@@ -245,7 +289,11 @@ describe("Program.intercept", () => {
         program.intercept([tokenOption], async () => {
             intercepted = true
         })
-        program.register({ name: "deploy", options: [otherOption], run: () => {} })
+        program.register({
+            name: "deploy",
+            options: [otherOption],
+            run: () => {}
+        })
         await program.execute(["deploy", "--other", "val"])
         expect(intercepted).toStrictEqual(false)
     })
@@ -260,10 +308,14 @@ describe("Program.intercept", () => {
         program.register({
             name: "deploy",
             options: [tokenOption],
-            run(argv: any) { received = argv }
+            run(argv: any) {
+                received = argv
+            }
         })
         await program.execute(["deploy", "--token", "original"])
-        expect((received as any).token).toStrictEqual("overridden")
+        expect((received as Record<string, unknown>).token).toStrictEqual(
+            "overridden"
+        )
     })
 
     it("should return this for chaining", () => {
@@ -272,7 +324,6 @@ describe("Program.intercept", () => {
         expect(result).toStrictEqual(program)
     })
 })
-
 
 describe("Program constructor", () => {
     it("should not throw with no configuration", () => {
@@ -286,7 +337,6 @@ describe("Program constructor", () => {
     })
 })
 
-
 describe("positional arguments", () => {
     it("should pass positional argument to run", async () => {
         let received: unknown = null
@@ -294,7 +344,9 @@ describe("positional arguments", () => {
         program.register({
             name: "deploy",
             arguments: [{ name: "target" }],
-            run(argv: any) { received = argv }
+            run(argv: any) {
+                received = argv
+            }
         })
         await program.execute(["deploy", "production"])
         expect(received).toStrictEqual({ target: "production" })
@@ -306,10 +358,15 @@ describe("positional arguments", () => {
         program.register({
             name: "deploy",
             arguments: [{ name: "target" }, { name: "environment" }],
-            run(argv: any) { received = argv }
+            run(argv: any) {
+                received = argv
+            }
         })
         await program.execute(["deploy", "app", "staging"])
-        expect(received).toStrictEqual({ target: "app", environment: "staging" })
+        expect(received).toStrictEqual({
+            target: "app",
+            environment: "staging"
+        })
     })
 
     it("should throw when required positional argument is missing", async () => {
@@ -318,8 +375,9 @@ describe("positional arguments", () => {
             name: "deploy",
             arguments: [{ name: "target", required: true }]
         })
-        await expect(program.execute(["deploy"]))
-            .rejects.toThrowError(`An argument "target" is required.`)
+        await expect(program.execute(["deploy"])).rejects.toThrowError(
+            `An argument "target" is required.`
+        )
     })
 
     it("should use defaultValue when positional argument is absent", async () => {
@@ -328,7 +386,9 @@ describe("positional arguments", () => {
         program.register({
             name: "deploy",
             arguments: [{ name: "target", defaultValue: () => "production" }],
-            run(argv: any) { received = argv }
+            run(argv: any) {
+                received = argv
+            }
         })
         await program.execute(["deploy"])
         expect(received).toStrictEqual({ target: "production" })
@@ -339,8 +399,12 @@ describe("positional arguments", () => {
         const program = new Program({ colors: false })
         program.register({
             name: "scale",
-            arguments: [{ name: "count", parse: (v: string) => parseInt(v, 10) }],
-            run(argv: any) { received = argv }
+            arguments: [
+                { name: "count", parse: (v: string) => parseInt(v, 10) }
+            ],
+            run(argv: any) {
+                received = argv
+            }
         })
         await program.execute(["scale", "5"])
         expect(received).toStrictEqual({ count: 5 })
@@ -352,7 +416,9 @@ describe("positional arguments", () => {
         program.register({
             name: "rm",
             arguments: [{ name: "files", variadic: true }],
-            run(argv: any) { received = argv }
+            run(argv: any) {
+                received = argv
+            }
         })
         await program.execute(["rm", "a.ts", "b.ts", "c.ts"])
         expect(received).toStrictEqual({ files: ["a.ts", "b.ts", "c.ts"] })
@@ -367,10 +433,15 @@ describe("positional arguments", () => {
                 { name: "destination" },
                 { name: "files", variadic: true }
             ],
-            run(argv: any) { received = argv }
+            run(argv: any) {
+                received = argv
+            }
         })
         await program.execute(["cp", "dist/", "a.ts", "b.ts"])
-        expect(received).toStrictEqual({ destination: "dist/", files: ["a.ts", "b.ts"] })
+        expect(received).toStrictEqual({
+            destination: "dist/",
+            files: ["a.ts", "b.ts"]
+        })
     })
 
     it("should merge positional arguments with named options", async () => {
@@ -380,7 +451,9 @@ describe("positional arguments", () => {
             name: "deploy",
             arguments: [{ name: "target" }],
             options: [{ name: "force", arity: 0 }],
-            run(argv: any) { received = argv }
+            run(argv: any) {
+                received = argv
+            }
         })
         await program.execute(["deploy", "production", "--force"])
         expect(received).toStrictEqual({ target: "production", force: [] })
@@ -388,13 +461,15 @@ describe("positional arguments", () => {
 
     it("should throw when variadic argument is not the last", () => {
         const program = new Program({ colors: false })
-        expect(() => program.register({
-            name: "bad",
-            arguments: [
-                { name: "files", variadic: true },
-                { name: "target" }
-            ]
-        })).toThrowError(`A variadic argument "files" must be the last argument.`)
+        expect(() =>
+            program.register({
+                name: "bad",
+                arguments: [
+                    { name: "files", variadic: true },
+                    { name: "target" }
+                ]
+            })
+        ).toThrowError(`A variadic argument "files" must be the last argument.`)
     })
 
     it("should show arguments in help output", async () => {
@@ -402,13 +477,17 @@ describe("positional arguments", () => {
         program.register({
             name: "deploy",
             arguments: [
-                { name: "target", required: true, description: "Deploy target" },
+                {
+                    name: "target",
+                    required: true,
+                    description: "Deploy target"
+                },
                 { name: "environment", description: "Target environment" }
             ]
         })
         const spy = vi.spyOn(console, "log").mockImplementation(() => {})
         await program.execute(["deploy", "--help"])
-        const output = spy.mock.calls.map(call => String(call[0])).join("\n")
+        const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
         spy.mockRestore()
         expect(output).toContain("<target>")
         expect(output).toContain("[environment]")

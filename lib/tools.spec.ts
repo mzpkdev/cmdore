@@ -1,19 +1,22 @@
-import { describe, it, expect } from "vitest"
+import { describe, expect, it } from "vitest"
 import { effect, mock } from "./tools"
-
 
 describe("effect", () => {
     it("should execute the callback when enabled", async () => {
         effect.enabled = true
         let ran = false
-        await effect(() => { ran = true })
+        await effect(() => {
+            ran = true
+        })
         expect(ran).toStrictEqual(true)
     })
 
     it("should not execute the callback when disabled", async () => {
         effect.enabled = false
         let ran = false
-        await effect(() => { ran = true })
+        await effect(() => {
+            ran = true
+        })
         expect(ran).toStrictEqual(false)
         effect.enabled = true
     })
@@ -39,7 +42,6 @@ describe("effect", () => {
         expect(result).toStrictEqual("async-value")
     })
 })
-
 
 describe("mock", () => {
     it("should replace the property with a no-op", () => {

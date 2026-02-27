@@ -1,6 +1,5 @@
-import { describe, it, expect } from "vitest"
+import { describe, expect, it } from "vitest"
 import { CmdoreError } from "./errors"
-
 
 describe("CmdoreError", () => {
     it("should be an instance of Error", () => {

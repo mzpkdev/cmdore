@@ -13,14 +13,17 @@ type Option<TName = string, TValue = unknown> = {
 }
 
 namespace Option {
-    export const parse = async (option: Option, values: string[] | undefined): Promise<unknown> => {
+    export const parse = async (
+        option: Option,
+        values: string[] | undefined
+    ): Promise<unknown> => {
         if (values == null) {
             if (option.required) {
                 throw new CmdoreError(`An option "${option.name}" is required.`)
             }
             return option.defaultValue?.()
         }
-        if (await option.validate?.(...values) == false) {
+        if ((await option.validate?.(...values)) === false) {
             throw new CmdoreError(
                 `An option "${option.name}" does not accept "${values.join(" ")}" as an argument.`
             )
@@ -32,9 +35,8 @@ namespace Option {
     }
 }
 
-export const defineOption = <
-    TName extends string, TValue
->(option: Option<TName, TValue>): Option<TName, TValue> => option
-
+export const defineOption = <TName extends string, TValue>(
+    option: Option<TName, TValue>
+): Option<TName, TValue> => option
 
 export default Option

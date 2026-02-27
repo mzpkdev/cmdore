@@ -3,9 +3,9 @@ export const isIterable = <TValue>(
 ): value is Iterable<TValue> => {
     return (
         value != null &&
-        typeof value == "object" &&
+        typeof value === "object" &&
         Symbol.iterator in value &&
-        typeof value[Symbol.iterator] == "function"
+        typeof value[Symbol.iterator] === "function"
     )
 }
 
@@ -14,8 +14,8 @@ export const isAsyncIterable = <TValue>(
 ): value is AsyncIterable<TValue> => {
     return (
         value != null &&
-        typeof value == "object" &&
+        typeof value === "object" &&
         Symbol.asyncIterator in value &&
-        typeof value[Symbol.asyncIterator] == "function"
+        typeof value[Symbol.asyncIterator] === "function"
     )
 }
