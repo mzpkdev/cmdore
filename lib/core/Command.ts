@@ -16,7 +16,9 @@ export type Argv<
         any,
         infer TValue
     >
-        ? TValue
+        ? TKey["variadic"] extends true
+            ? TValue[]
+            : TValue
         : unknown
 }
 

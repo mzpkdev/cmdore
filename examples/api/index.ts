@@ -14,7 +14,7 @@ const list = defineCommand({
         })
     ],
     async *run({ limit }) {
-        for (let i = 1; i <= (limit as number); i++) {
+        for (let i = 1; i <= limit; i++) {
             const item = { id: i, name: `item-${i}` }
             console.log(`id=${item.id} name=${item.name}`)
             yield item

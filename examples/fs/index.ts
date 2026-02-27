@@ -18,7 +18,7 @@ const copy = defineCommand({
     ],
     run({ destination, files }) {
         console.log(
-            `Copying ${(files as string[]).join(", ")} to ${destination}`
+            `Copying ${files.join(", ")} to ${destination}`
         )
     }
 })
@@ -44,7 +44,7 @@ const remove = defineCommand({
         })
     ],
     run({ files }) {
-        console.log(`Removing ${(files as string[]).join(", ")}`)
+        console.log(`Removing ${files.join(", ")}`)
     }
 })
 

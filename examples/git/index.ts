@@ -20,9 +20,9 @@ const push = defineCommand({
         })
     ],
     run(argv) {
-        const { auth, force } = argv as Record<string, unknown>
+        const { auth, force } = argv as typeof argv & { auth: string }
         console.log(`Pushing with auth=${auth}`)
-        if (Array.isArray(force)) {
+        if (force) {
             console.log("Force push enabled")
         }
     }
@@ -38,11 +38,8 @@ const status = defineCommand({
 
 export const createProgram = () => {
     const program = new Program({ colors: false })
-    program.intercept([tokenOption], async (argv) => {
-        return {
-            ...(argv as Record<string, unknown>),
-            auth: (argv as Record<string, unknown>).token
-        }
+    program.intercept([tokenOption], async ({ token, ...rest }) => {
+        return { ...rest, auth: token }
     })
     return program.register(push).register(status)
 }
