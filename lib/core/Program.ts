@@ -17,7 +17,9 @@ export type Configuration = {
 class Program {
     #_metadata: Metadata | undefined
     #_commands = new Map<string, Command>()
-    #_interceptors = new Set<[(argv: Argv) => Promise<Argv | void>, Option[]]>()
+    #_interceptors = new Set<
+        [(argv: Argv) => Promise<Argv | void>, readonly Option[]]
+    >()
 
     get metadata(): Metadata {
         if (this.#_metadata == null) {
@@ -36,7 +38,9 @@ class Program {
         }
     }
 
-    intercept<TOptionArray extends Option[] = Option<string, any>[]>(
+    intercept<
+        TOptionArray extends readonly Option[] = readonly Option<string, any>[]
+    >(
         dependencies: TOptionArray,
         interceptor: (argv: Argv<TOptionArray>) => Promise<Argv | void>
     ): this {
@@ -48,8 +52,8 @@ class Program {
     }
 
     register<
-        TOptionArray extends Option<string, any>[],
-        TArgumentArray extends Argument<string, any>[]
+        const TOptionArray extends readonly Option<string, any>[],
+        const TArgumentArray extends readonly Argument<string, any>[]
     >(command: Command<TOptionArray, TArgumentArray>): this {
         const args = command.arguments ?? []
         for (let i = 0; i < args.length; i++) {

@@ -1,31 +1,25 @@
-import {
-    defineArgument,
-    defineCommand,
-    defineOption,
-    effect,
-    Program
-} from "cmdore"
+import { defineCommand, effect, Program } from "cmdore"
 
 const deploy = defineCommand({
     name: "deploy",
     description: "Deploy the application",
     examples: ["staging", "production --port 8080", "staging --dry-run"],
     arguments: [
-        defineArgument({
+        {
             name: "environment",
             required: true,
             description: "Target environment (staging, production)",
             validate: (value) => ["staging", "production"].includes(value)
-        })
+        }
     ],
     options: [
-        defineOption({
+        {
             name: "port",
             description: "Port number",
             defaultValue: () => 3000,
             validate: (value) => parseInt(value, 10) > 0,
             parse: (value) => parseInt(value, 10)
-        })
+        }
     ],
     run({ environment, port }) {
         console.log(`Deploying to ${environment} on port ${port}...`)

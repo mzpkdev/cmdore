@@ -2,8 +2,11 @@ import type Argument from "./Argument"
 import type Option from "./Option"
 
 export type Argv<
-    TOptionArray extends Option[] = Option<string, any>[],
-    TArgumentArray extends Argument[] = Argument<string, any>[]
+    TOptionArray extends readonly Option[] = readonly Option<string, any>[],
+    TArgumentArray extends readonly Argument[] = readonly Argument<
+        string,
+        any
+    >[]
 > = {
     [TKey in TOptionArray[number] as TKey["name"]]: TKey extends Option<
         any,
@@ -23,8 +26,11 @@ export type Argv<
 }
 
 export type Command<
-    TOptionArray extends Option<string, any>[] = Option[],
-    TArgumentArray extends Argument<string, any>[] = Argument[]
+    TOptionArray extends readonly Option<string, any>[] = readonly Option[],
+    TArgumentArray extends readonly Argument<
+        string,
+        any
+    >[] = readonly Argument[]
 > = {
     name: string
     description?: string
@@ -39,8 +45,8 @@ export type Command<
 }
 
 export const defineCommand = <
-    TOptionArray extends Option<string, any>[],
-    TArgumentArray extends Argument<string, any>[]
+    const TOptionArray extends readonly Option<string, any>[],
+    const TArgumentArray extends readonly Argument<string, any>[]
 >(
     command: Command<TOptionArray, TArgumentArray>
 ): Command<TOptionArray, TArgumentArray> => command
