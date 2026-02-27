@@ -18,7 +18,8 @@
         "emitDecoratorMetadata": true,
         "lib": ["es2024"],
         "paths": {
-            "@/*": ["./lib/*"]
+            "@/*": ["./lib/*"],
+            "cmdore": ["./lib/index.ts"]
         },
         "plugins": [
             {

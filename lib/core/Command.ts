@@ -23,8 +23,8 @@ export type Argv<
 }
 
 export type Command<
-    TOptionArray extends Option[] = Option[],
-    TArgumentArray extends Argument[] = Argument[]
+    TOptionArray extends Option<string, any>[] = Option[],
+    TArgumentArray extends Argument<string, any>[] = Argument[]
 > = {
     name: string
     description?: string
@@ -39,8 +39,8 @@ export type Command<
 }
 
 export const defineCommand = <
-    TOptionArray extends Option[],
-    TArgumentArray extends Argument[]
+    TOptionArray extends Option<string, any>[],
+    TArgumentArray extends Argument<string, any>[]
 >(
     command: Command<TOptionArray, TArgumentArray>
 ): Command<TOptionArray, TArgumentArray> => command

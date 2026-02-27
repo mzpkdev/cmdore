@@ -1,10 +1,14 @@
 import { CmdoreError } from "../errors"
 
-type Argument<TName = string, TValue = string> = {
+type Argument<
+    TName = string,
+    TValue = string,
+    TVariadic extends boolean = boolean
+> = {
     name: TName
     description?: string
     required?: boolean
-    variadic?: boolean
+    variadic?: TVariadic
     defaultValue?: () => TValue
     validate?: (...values: string[]) => void | boolean | Promise<unknown>
     parse?: (...values: string[]) => TValue
@@ -58,8 +62,12 @@ namespace Argument {
     }
 }
 
-export const defineArgument = <TName extends string, TValue = string>(
-    argument: Argument<TName, TValue>
-): Argument<TName, TValue> => argument
+export const defineArgument = <
+    TName extends string,
+    TValue = string,
+    TVariadic extends boolean = false
+>(
+    argument: Argument<TName, TValue, TVariadic>
+): Argument<TName, TValue, TVariadic> => argument
 
 export default Argument

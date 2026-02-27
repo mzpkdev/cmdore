@@ -17,9 +17,7 @@ const copy = defineCommand({
         })
     ],
     run({ destination, files }) {
-        console.log(
-            `Copying ${files.join(", ")} to ${destination}`
-        )
+        console.log(`Copying ${files.join(", ")} to ${destination}`)
     }
 })
 

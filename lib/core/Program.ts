@@ -47,9 +47,10 @@ class Program {
         return this
     }
 
-    register<TOptionArray extends Option[], TArgumentArray extends Argument[]>(
-        command: Command<TOptionArray, TArgumentArray>
-    ): this {
+    register<
+        TOptionArray extends Option<string, any>[],
+        TArgumentArray extends Argument<string, any>[]
+    >(command: Command<TOptionArray, TArgumentArray>): this {
         const args = command.arguments ?? []
         for (let i = 0; i < args.length; i++) {
             if (args[i].variadic && i !== args.length - 1) {
