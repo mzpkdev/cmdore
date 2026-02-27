@@ -36,12 +36,8 @@ const status = defineCommand({
     }
 })
 
-export const createProgram = () => {
-    const program = new Program({ colors: false })
-    program.intercept([tokenOption], async ({ token, ...rest }) => {
-        return { ...rest, auth: token }
-    })
-    return program.register(push).register(status)
-}
-
-createProgram().execute()
+export const program = new Program({ colors: false })
+program.intercept([tokenOption], async ({ token, ...rest }) => {
+    return { ...rest, auth: token }
+})
+program.register(push).register(status)

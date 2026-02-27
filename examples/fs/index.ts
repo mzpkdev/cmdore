@@ -46,7 +46,6 @@ const remove = defineCommand({
     }
 })
 
-export const createProgram = () =>
-    new Program({ colors: false }).register(copy).register(remove)
-
-createProgram().execute()
+export const program = new Program({ colors: false })
+    .register(copy)
+    .register(remove)

@@ -35,7 +35,4 @@ const deploy = defineCommand({
     }
 })
 
-export const createProgram = () =>
-    new Program({ colors: false }).register(deploy)
-
-createProgram().execute()
+export const program = new Program({ colors: false }).register(deploy)

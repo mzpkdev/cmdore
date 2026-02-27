@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest"
-import { createProgram } from "./index"
+import { program } from "./index"
 
 describe("list", () => {
     it("should serialize yielded items as JSON with --json", async () => {
@@ -9,7 +9,7 @@ describe("list", () => {
             .mockImplementation((...args: any[]) => {
                 output.push(String(args[0]))
             })
-        await createProgram().execute(["list", "--json"])
+        await program.execute(["list", "--json"])
         spy.mockRestore()
         expect(output).toContain(
             JSON.stringify({ id: 1, name: "item-1" }, null, 2)
@@ -30,7 +30,7 @@ describe("list", () => {
             .mockImplementation((...args: any[]) => {
                 output.push(String(args[0]))
             })
-        await createProgram().execute(["list", "--json", "--limit", "2"])
+        await program.execute(["list", "--json", "--limit", "2"])
         spy.mockRestore()
         expect(output).toHaveLength(2)
     })
@@ -42,7 +42,7 @@ describe("list", () => {
             .mockImplementation((...args: any[]) => {
                 output.push(String(args[0]))
             })
-        await createProgram().execute(["list", "--json", "-l", "1"])
+        await program.execute(["list", "--json", "-l", "1"])
         spy.mockRestore()
         expect(output).toHaveLength(1)
         expect(output).toContain(
@@ -57,7 +57,7 @@ describe("list", () => {
             .mockImplementation((...args: any[]) => {
                 output.push(String(args[0]))
             })
-        await createProgram().execute(["list"])
+        await program.execute(["list"])
         spy.mockRestore()
         expect(output).toContain("id=1 name=item-1")
         expect(output).toContain("id=2 name=item-2")

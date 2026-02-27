@@ -1,6 +1,6 @@
 import { effect } from "cmdore"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { createProgram } from "./index"
+import { program } from "./index"
 
 afterEach(() => {
     effect.enabled = true
@@ -14,7 +14,7 @@ describe("deploy", () => {
             .mockImplementation((...args: any[]) => {
                 output.push(String(args[0]))
             })
-        await createProgram().execute(["deploy", "staging", "--port", "8080"])
+        await program.execute(["deploy", "staging", "--port", "8080"])
         spy.mockRestore()
         expect(output).toContain("Deploying to staging on port 8080...")
         expect(output).toContain("Deployment to staging complete.")
@@ -27,22 +27,20 @@ describe("deploy", () => {
             .mockImplementation((...args: any[]) => {
                 output.push(String(args[0]))
             })
-        await createProgram().execute(["deploy", "production"])
+        await program.execute(["deploy", "production"])
         spy.mockRestore()
         expect(output).toContain("Deploying to production on port 3000...")
     })
 
     it("should reject invalid environment", async () => {
-        await expect(
-            createProgram().execute(["deploy", "dev"])
-        ).rejects.toThrowError(
+        await expect(program.execute(["deploy", "dev"])).rejects.toThrowError(
             'An argument "environment" does not accept "dev" as a value.'
         )
     })
 
     it("should reject invalid port", async () => {
         await expect(
-            createProgram().execute(["deploy", "staging", "--port", "0"])
+            program.execute(["deploy", "staging", "--port", "0"])
         ).rejects.toThrowError(
             'An option "port" does not accept "0" as an argument.'
         )
@@ -55,7 +53,7 @@ describe("deploy", () => {
             .mockImplementation((...args: any[]) => {
                 output.push(String(args[0]))
             })
-        await createProgram().execute(["deploy", "staging", "--dry-run"])
+        await program.execute(["deploy", "staging", "--dry-run"])
         spy.mockRestore()
         expect(output).toContain("Deploying to staging on port 3000...")
         expect(output).not.toContain("Deployment to staging complete.")
