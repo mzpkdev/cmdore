@@ -1,20 +1,7 @@
 import { describe, expect, it, vi } from "vitest"
+import { createProgram } from "./index"
 
-vi.mock("pkginspect", () => ({
-    default: {
-        inspect: () => ({
-            root: {
-                metadata: {
-                    name: "api",
-                    version: "0.0.0",
-                    description: "An API CLI"
-                }
-            }
-        })
-    }
-}))
-
-const { createProgram } = await import("./index")
+const metadata = { name: "api", version: "0.0.0", description: "An API CLI" }
 
 describe("list", () => {
     it("should serialize yielded items as JSON with --json", async () => {
@@ -24,7 +11,7 @@ describe("list", () => {
             .mockImplementation((...args: any[]) => {
                 output.push(String(args[0]))
             })
-        await createProgram().execute(["list", "--json"])
+        await createProgram(metadata).execute(["list", "--json"])
         spy.mockRestore()
         expect(output).toContain(
             JSON.stringify({ id: 1, name: "item-1" }, null, 2)
@@ -45,7 +32,12 @@ describe("list", () => {
             .mockImplementation((...args: any[]) => {
                 output.push(String(args[0]))
             })
-        await createProgram().execute(["list", "--json", "--limit", "2"])
+        await createProgram(metadata).execute([
+            "list",
+            "--json",
+            "--limit",
+            "2"
+        ])
         spy.mockRestore()
         expect(output).toHaveLength(2)
     })
@@ -57,7 +49,7 @@ describe("list", () => {
             .mockImplementation((...args: any[]) => {
                 output.push(String(args[0]))
             })
-        await createProgram().execute(["list", "--json", "-l", "1"])
+        await createProgram(metadata).execute(["list", "--json", "-l", "1"])
         spy.mockRestore()
         expect(output).toHaveLength(1)
         expect(output).toContain(
@@ -72,7 +64,7 @@ describe("list", () => {
             .mockImplementation((...args: any[]) => {
                 output.push(String(args[0]))
             })
-        await createProgram().execute(["list"])
+        await createProgram(metadata).execute(["list"])
         spy.mockRestore()
         expect(output).toContain("id=1 name=item-1")
         expect(output).toContain("id=2 name=item-2")

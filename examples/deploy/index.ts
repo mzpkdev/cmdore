@@ -3,6 +3,7 @@ import {
     defineCommand,
     defineOption,
     effect,
+    type Metadata,
     Program
 } from "cmdore"
 
@@ -35,7 +36,7 @@ const deploy = defineCommand({
     }
 })
 
-export const createProgram = () =>
-    new Program({ colors: false }).register(deploy)
+export const createProgram = (metadata?: Metadata) =>
+    new Program({ colors: false, metadata }).register(deploy)
 
 createProgram().execute()

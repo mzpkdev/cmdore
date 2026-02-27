@@ -9,6 +9,7 @@ export { default as Option } from "./core/Option"
 export * from "./core/Program"
 export { default as Program } from "./core/Program"
 export * from "./errors"
+export type { Metadata } from "./metadata"
 export * from "./tools"
 
 export default (): Program => {

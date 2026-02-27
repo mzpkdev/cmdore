@@ -45,7 +45,6 @@
     "dependencies": {
         "argvex": "^0.0.6",
         "logtint": "^0.2.3",
-        "pkginspect": "^0.0.0",
         "tslib": "^2.6.3"
     }
 }

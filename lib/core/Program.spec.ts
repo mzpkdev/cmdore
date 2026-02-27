@@ -1,31 +1,18 @@
 import { describe, expect, it, vi } from "vitest"
 import { effect } from "../tools"
+import Program from "./Program"
 
-vi.mock("pkginspect", () => ({
-    default: {
-        inspect: () => ({
-            root: {
-                metadata: {
-                    name: "cmdore",
-                    version: "0.0.8",
-                    description: "A test CLI"
-                }
-            }
-        })
-    }
-}))
-
-const { default: Program } = await import("./Program")
+const metadata = { name: "cmdore", version: "0.0.8", description: "A test CLI" }
 
 describe("Program.register", () => {
     it("should return this for chaining", () => {
-        const program = new Program({ colors: false })
+        const program = new Program({ colors: false, metadata })
         const result = program.register({ name: "build", run: () => {} })
         expect(result).toStrictEqual(program)
     })
 
     it("should register multiple commands", async () => {
-        const program = new Program({ colors: false })
+        const program = new Program({ colors: false, metadata })
         const ran: string[] = []
         program.register({
             name: "build",
@@ -48,7 +35,7 @@ describe("Program.register", () => {
 describe("Program.execute", () => {
     describe("command dispatch", () => {
         it("should throw when command does not exist", async () => {
-            const program = new Program({ colors: false })
+            const program = new Program({ colors: false, metadata })
             await expect(program.execute(["nonexistent"])).rejects.toThrowError(
                 `A command "nonexistent" does not exist.`
             )
@@ -56,7 +43,7 @@ describe("Program.execute", () => {
 
         it("should call the run function with parsed argv", async () => {
             let received: unknown = null
-            const program = new Program({ colors: false })
+            const program = new Program({ colors: false, metadata })
             program.register({
                 name: "serve",
                 options: [{ name: "port" }],
@@ -70,7 +57,7 @@ describe("Program.execute", () => {
 
         it("should call run with empty argv when command has no options", async () => {
             let ran = false
-            const program = new Program({ colors: false })
+            const program = new Program({ colors: false, metadata })
             program.register({
                 name: "ping",
                 run: () => {
@@ -84,7 +71,7 @@ describe("Program.execute", () => {
 
     describe("--help flag", () => {
         it("should not throw when --help is passed", async () => {
-            const program = new Program({ colors: false })
+            const program = new Program({ colors: false, metadata })
             program.register({
                 name: "build",
                 description: "Build the project"
@@ -95,7 +82,7 @@ describe("Program.execute", () => {
         })
 
         it("should show help when no command is given", async () => {
-            const program = new Program({ colors: false })
+            const program = new Program({ colors: false, metadata })
             const spy = vi.spyOn(console, "log").mockImplementation(() => {})
             await program.execute([])
             expect(spy).toHaveBeenCalled()
@@ -103,7 +90,7 @@ describe("Program.execute", () => {
         })
 
         it("should show command-specific help", async () => {
-            const program = new Program({ colors: false })
+            const program = new Program({ colors: false, metadata })
             program.register({
                 name: "build",
                 options: [{ name: "watch", arity: 0 }]
@@ -117,7 +104,7 @@ describe("Program.execute", () => {
 
     describe("--version flag", () => {
         it("should not throw when --version is passed", async () => {
-            const program = new Program({ colors: false })
+            const program = new Program({ colors: false, metadata })
             const spy = vi.spyOn(console, "log").mockImplementation(() => {})
             await program.execute(["--version"])
             expect(spy).toHaveBeenCalled()
@@ -128,7 +115,7 @@ describe("Program.execute", () => {
     describe("--dry-run flag", () => {
         it("should disable effect execution", async () => {
             effect.enabled = true
-            const program = new Program({ colors: false })
+            const program = new Program({ colors: false, metadata })
             let effectCallbackRan = false
             program.register({
                 name: "deploy",
@@ -146,7 +133,7 @@ describe("Program.execute", () => {
 
     describe("--quiet flag", () => {
         it("should suppress console.log during command execution", async () => {
-            const program = new Program({ colors: false })
+            const program = new Program({ colors: false, metadata })
             const output: string[] = []
             const spy = vi
                 .spyOn(console, "log")
@@ -167,7 +154,7 @@ describe("Program.execute", () => {
 
     describe("--json flag with iterable output", () => {
         it("should serialize iterable output as JSON", async () => {
-            const program = new Program({ colors: false })
+            const program = new Program({ colors: false, metadata })
             program.register({
                 name: "list",
                 run: () => [{ id: 1 }, { id: 2 }]
@@ -185,7 +172,7 @@ describe("Program.execute", () => {
         })
 
         it("should serialize async iterable output as JSON", async () => {
-            const program = new Program({ colors: false })
+            const program = new Program({ colors: false, metadata })
             program.register({
                 name: "stream",
                 run: async function* () {
@@ -209,7 +196,7 @@ describe("Program.execute", () => {
     describe("option parsing", () => {
         it("should resolve option alias", async () => {
             let received: unknown = null
-            const program = new Program({ colors: false })
+            const program = new Program({ colors: false, metadata })
             program.register({
                 name: "serve",
                 options: [{ name: "port", alias: "p" }],
@@ -223,7 +210,7 @@ describe("Program.execute", () => {
 
         it("should use defaultValue when flag is absent", async () => {
             let received: unknown = null
-            const program = new Program({ colors: false })
+            const program = new Program({ colors: false, metadata })
             program.register({
                 name: "serve",
                 options: [{ name: "port", defaultValue: () => "8080" }],
@@ -236,7 +223,7 @@ describe("Program.execute", () => {
         })
 
         it("should throw when a required option is missing", async () => {
-            const program = new Program({ colors: false })
+            const program = new Program({ colors: false, metadata })
             program.register({
                 name: "deploy",
                 options: [{ name: "env", required: true }]
@@ -248,7 +235,7 @@ describe("Program.execute", () => {
 
         it("should use parse function result in argv", async () => {
             let received: unknown = null
-            const program = new Program({ colors: false })
+            const program = new Program({ colors: false, metadata })
             program.register({
                 name: "serve",
                 options: [
@@ -267,7 +254,7 @@ describe("Program.execute", () => {
 describe("Program.intercept", () => {
     it("should fire when all dependency options are present", async () => {
         let intercepted = false
-        const program = new Program({ colors: false })
+        const program = new Program({ colors: false, metadata })
         const tokenOption = { name: "token" }
         program.intercept([tokenOption], async () => {
             intercepted = true
@@ -283,7 +270,7 @@ describe("Program.intercept", () => {
 
     it("should not fire when dependency options are missing", async () => {
         let intercepted = false
-        const program = new Program({ colors: false })
+        const program = new Program({ colors: false, metadata })
         const tokenOption = { name: "token" }
         const otherOption = { name: "other" }
         program.intercept([tokenOption], async () => {
@@ -300,7 +287,7 @@ describe("Program.intercept", () => {
 
     it("should pass modified argv from interceptor to the command", async () => {
         let received: unknown = null
-        const program = new Program({ colors: false })
+        const program = new Program({ colors: false, metadata })
         const tokenOption = { name: "token" }
         program.intercept([tokenOption], async (argv: any) => {
             return { ...argv, token: "overridden" }
@@ -319,7 +306,7 @@ describe("Program.intercept", () => {
     })
 
     it("should return this for chaining", () => {
-        const program = new Program({ colors: false })
+        const program = new Program({ colors: false, metadata })
         const result = program.intercept([], async () => {})
         expect(result).toStrictEqual(program)
     })
@@ -332,7 +319,7 @@ describe("Program constructor", () => {
 
     it("should skip colorConsoleLog when colors is false", () => {
         const originalLog = console.log
-        new Program({ colors: false })
+        new Program({ colors: false, metadata })
         expect(console.log).toStrictEqual(originalLog)
     })
 })
@@ -340,7 +327,7 @@ describe("Program constructor", () => {
 describe("positional arguments", () => {
     it("should pass positional argument to run", async () => {
         let received: unknown = null
-        const program = new Program({ colors: false })
+        const program = new Program({ colors: false, metadata })
         program.register({
             name: "deploy",
             arguments: [{ name: "target" }],
@@ -354,7 +341,7 @@ describe("positional arguments", () => {
 
     it("should pass multiple positional arguments to run", async () => {
         let received: unknown = null
-        const program = new Program({ colors: false })
+        const program = new Program({ colors: false, metadata })
         program.register({
             name: "deploy",
             arguments: [{ name: "target" }, { name: "environment" }],
@@ -370,7 +357,7 @@ describe("positional arguments", () => {
     })
 
     it("should throw when required positional argument is missing", async () => {
-        const program = new Program({ colors: false })
+        const program = new Program({ colors: false, metadata })
         program.register({
             name: "deploy",
             arguments: [{ name: "target", required: true }]
@@ -382,7 +369,7 @@ describe("positional arguments", () => {
 
     it("should use defaultValue when positional argument is absent", async () => {
         let received: unknown = null
-        const program = new Program({ colors: false })
+        const program = new Program({ colors: false, metadata })
         program.register({
             name: "deploy",
             arguments: [{ name: "target", defaultValue: () => "production" }],
@@ -396,7 +383,7 @@ describe("positional arguments", () => {
 
     it("should use parse function for positional argument", async () => {
         let received: unknown = null
-        const program = new Program({ colors: false })
+        const program = new Program({ colors: false, metadata })
         program.register({
             name: "scale",
             arguments: [
@@ -412,7 +399,7 @@ describe("positional arguments", () => {
 
     it("should collect remaining operands for variadic argument", async () => {
         let received: unknown = null
-        const program = new Program({ colors: false })
+        const program = new Program({ colors: false, metadata })
         program.register({
             name: "rm",
             arguments: [{ name: "files", variadic: true }],
@@ -426,7 +413,7 @@ describe("positional arguments", () => {
 
     it("should support mixed positional and variadic arguments", async () => {
         let received: unknown = null
-        const program = new Program({ colors: false })
+        const program = new Program({ colors: false, metadata })
         program.register({
             name: "cp",
             arguments: [
@@ -446,7 +433,7 @@ describe("positional arguments", () => {
 
     it("should merge positional arguments with named options", async () => {
         let received: unknown = null
-        const program = new Program({ colors: false })
+        const program = new Program({ colors: false, metadata })
         program.register({
             name: "deploy",
             arguments: [{ name: "target" }],
@@ -460,7 +447,7 @@ describe("positional arguments", () => {
     })
 
     it("should throw when variadic argument is not the last", () => {
-        const program = new Program({ colors: false })
+        const program = new Program({ colors: false, metadata })
         expect(() =>
             program.register({
                 name: "bad",
@@ -473,7 +460,7 @@ describe("positional arguments", () => {
     })
 
     it("should show arguments in help output", async () => {
-        const program = new Program({ colors: false })
+        const program = new Program({ colors: false, metadata })
         program.register({
             name: "deploy",
             arguments: [

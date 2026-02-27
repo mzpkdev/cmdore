@@ -1,7 +1,7 @@
 import argvex from "argvex"
 import log, { bold, dim } from "logtint"
-import pkg, { type Metadata } from "pkginspect"
 import { CmdoreError } from "../errors"
+import { findMetadata, type Metadata } from "../metadata"
 import { colorConsoleLog, effect, mock } from "../tools"
 import { isAsyncIterable, isIterable } from "../utils"
 import Argument from "./Argument"
@@ -10,7 +10,8 @@ import type { Argv } from "./Command"
 import Option from "./Option"
 
 export type Configuration = {
-    colors: boolean
+    colors?: boolean
+    metadata?: Metadata
 }
 
 class Program {
@@ -20,14 +21,16 @@ class Program {
 
     get metadata(): Metadata {
         if (this.#_metadata == null) {
-            const self = pkg.inspect()
-            this.#_metadata = self.root.metadata
+            this.#_metadata = findMetadata()
         }
         return this.#_metadata
     }
 
     constructor(configuration?: Configuration) {
-        const { colors = true } = configuration ?? {}
+        const { colors = true, metadata } = configuration ?? {}
+        if (metadata) {
+            this.#_metadata = metadata
+        }
         if (colors) {
             colorConsoleLog()
         }
