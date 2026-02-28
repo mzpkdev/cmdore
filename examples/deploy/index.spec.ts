@@ -1,10 +1,5 @@
-import { effect } from "cmdore"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import { program } from "./index"
-
-afterEach(() => {
-    effect.enabled = true
-})
 
 describe("deploy", () => {
     it("should deploy to a valid environment with custom port", async () => {

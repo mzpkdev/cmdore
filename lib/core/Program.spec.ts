@@ -114,7 +114,6 @@ describe("Program.execute", () => {
 
     describe("--dry-run flag", () => {
         it("should disable effect execution", async () => {
-            effect.enabled = true
             const program = new Program({ colors: false, metadata })
             let effectCallbackRan = false
             program.register({
@@ -127,7 +126,6 @@ describe("Program.execute", () => {
             })
             await program.execute(["deploy", "--dry-run"])
             expect(effectCallbackRan).toStrictEqual(false)
-            effect.enabled = true
         })
     })
 

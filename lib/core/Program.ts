@@ -211,58 +211,63 @@ class Program {
         if (command == null) {
             throw new CmdoreError(`A command "${main}" does not exist.`)
         }
-        if (flags["dry-run"]) {
-            effect.enabled = false
-        }
-        let argv2: Argv = {}
-        for (const option of command.options ?? []) {
-            const values: string[] | undefined =
-                flags[option.alias ?? option.name] ?? flags[option.name]
-            argv2[option.name] = await Option.parse(option, values)
-        }
-        const args = command.arguments ?? []
-        const positionalOperands = operands.slice(1)
-        for (let i = 0; i < args.length; i++) {
-            const argument = args[i]
-            if (argument.variadic) {
-                argv2[argument.name] = await Argument.parseVariadic(
-                    argument,
-                    positionalOperands.slice(i)
-                )
-            } else {
-                argv2[argument.name] = await Argument.parse(
-                    argument,
-                    positionalOperands[i]
-                )
+        const previousEffectEnabled = effect.enabled
+        const mocked: (() => void)[] = []
+        try {
+            if (flags["dry-run"]) {
+                effect.enabled = false
             }
-        }
-        const log = console.log.bind(console)
-        const mocked = []
-        if (!flags.verbose || flags.json) {
-            mocked.push(mock(console, "debug"), mock(console, "info"))
-        }
-        if (flags.quiet || flags.json) {
-            mocked.push(
-                mock(console, "log"),
-                mock(console, "warn"),
-                mock(console, "error")
-            )
-        }
-        for (const [interceptor, dependencies] of this.#_interceptors) {
-            if (dependencies.every((dependency) => dependency.name in argv2)) {
-                argv2 = (await interceptor(argv2)) ?? argv2
+            let argv2: Argv = {}
+            for (const option of command.options ?? []) {
+                const values: string[] | undefined =
+                    flags[option.alias ?? option.name] ?? flags[option.name]
+                argv2[option.name] = await Option.parse(option, values)
             }
-        }
-        const output = await command.run?.(argv2)
-        if (isIterable(output) || isAsyncIterable(output)) {
-            for await (const entry of output) {
-                if (flags.json) {
-                    log(JSON.stringify(entry, null, 2))
+            const args = command.arguments ?? []
+            const positionalOperands = operands.slice(1)
+            for (let i = 0; i < args.length; i++) {
+                const argument = args[i]
+                if (argument.variadic) {
+                    argv2[argument.name] = await Argument.parseVariadic(
+                        argument,
+                        positionalOperands.slice(i)
+                    )
+                } else {
+                    argv2[argument.name] = await Argument.parse(
+                        argument,
+                        positionalOperands[i]
+                    )
                 }
             }
-        }
-        for (const unmock of mocked) {
-            unmock()
+            const log = console.log.bind(console)
+            if (!flags.verbose || flags.json) {
+                mocked.push(mock(console, "debug"), mock(console, "info"))
+            }
+            if (flags.quiet || flags.json) {
+                mocked.push(
+                    mock(console, "log"),
+                    mock(console, "warn"),
+                    mock(console, "error")
+                )
+            }
+            for (const [interceptor, dependencies] of this.#_interceptors) {
+                if (dependencies.every((dependency) => dependency.name in argv2)) {
+                    argv2 = (await interceptor(argv2)) ?? argv2
+                }
+            }
+            const output = await command.run?.(argv2)
+            if (isIterable(output) || isAsyncIterable(output)) {
+                for await (const entry of output) {
+                    if (flags.json) {
+                        log(JSON.stringify(entry, null, 2))
+                    }
+                }
+            }
+        } finally {
+            effect.enabled = previousEffectEnabled
+            for (const unmock of mocked) {
+                unmock()
+            }
         }
     }
 }
