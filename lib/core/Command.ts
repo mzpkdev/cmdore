@@ -25,6 +25,12 @@ export type Argv<
         : unknown
 }
 
+export type InterceptedArgv<
+    TArgv,
+    TRemoved extends string,
+    TAdded extends Record<string, unknown>
+> = Omit<TArgv, TRemoved> & TAdded
+
 export type Command<
     TOptionArray extends readonly Option<string, any>[] = readonly Option[],
     TArgumentArray extends readonly Argument<

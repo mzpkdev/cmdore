@@ -1,4 +1,10 @@
-import { defineCommand, defineOption, Program, terminal } from "cmdore"
+import {
+    defineCommand,
+    defineOption,
+    type InterceptedArgv,
+    Program,
+    terminal
+} from "cmdore"
 
 const tokenOption = defineOption({
     name: "token",
@@ -20,7 +26,11 @@ const push = defineCommand({
         })
     ],
     run(argv) {
-        const { auth, force } = argv as typeof argv & { auth: string }
+        const { auth, force } = argv as InterceptedArgv<
+            typeof argv,
+            "token",
+            { auth: string }
+        >
         terminal.log(`Pushing with auth=${auth}`)
         if (force) {
             terminal.log("Force push enabled")

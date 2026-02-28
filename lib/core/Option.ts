@@ -11,7 +11,6 @@ type Option<TName = string, TValue = string> = {
     validate?: (
         ...values: string[]
     ) => TValue | void | boolean | Promise<TValue | void | boolean>
-    [property: string]: unknown
 }
 
 namespace Option {

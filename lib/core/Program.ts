@@ -15,7 +15,7 @@ export type Configuration = {
 
 class Program {
     #_metadata: Metadata | undefined
-    #_commands = new Map<string, Command>()
+    #_commands = new Map<string, Command<any, any>>()
     #_interceptors = new Set<
         [(argv: Argv) => Promise<Argv | void>, readonly Option[]]
     >()
@@ -58,11 +58,11 @@ class Program {
                 )
             }
         }
-        this.#_commands.set(command.name, command as unknown as Command)
+        this.#_commands.set(command.name, command)
         return this
     }
 
-    help(command?: Command): this {
+    help(command?: Command<any, any>): this {
         const { name, description } = this.metadata
         log``
         log`${bold(name)} - ${description}`
@@ -85,7 +85,7 @@ class Program {
         }
         log`${bold(dim`USAGE`)}`
         const argsSummary = (command.arguments ?? [])
-            .map((arg) => {
+            .map((arg: Argument) => {
                 const label = arg.variadic ? `${arg.name}...` : arg.name
                 return arg.required ? `<${label}>` : `[${label}]`
             })
@@ -119,25 +119,27 @@ class Program {
             log``
         }
         log`${bold(dim`OPTIONS`)}`
-        const man: string[][] = (command.options ?? []).map((option) => {
-            const flags = option.alias
-                ? `-${option.alias}, --${option.name}`
-                : `--${option.name}`.padStart(4, " ")
-            const args = option.hint ? ` <${option.hint}>` : ""
-            let info = ""
-            if (option.required) {
-                info = "(required)"
+        const man: string[][] = (command.options ?? []).map(
+            (option: Option) => {
+                const flags = option.alias
+                    ? `-${option.alias}, --${option.name}`
+                    : `--${option.name}`.padStart(4, " ")
+                const args = option.hint ? ` <${option.hint}>` : ""
+                let info = ""
+                if (option.required) {
+                    info = "(required)"
+                }
+                if (option.defaultValue) {
+                    const defaultValue = option.defaultValue()
+                    info = `(${JSON.stringify(defaultValue)})`
+                }
+                const left = `${flags}${args}`
+                const right = option.description
+                    ? `${option.description} ${info}`.trim()
+                    : info
+                return [left, right]
             }
-            if (option.defaultValue) {
-                const defaultValue = option.defaultValue()
-                info = `(${JSON.stringify(defaultValue)})`
-            }
-            const left = `${flags}${args}`
-            const right = option.description
-                ? `${option.description} ${info}`.trim()
-                : info
-            return [left, right]
-        })
+        )
         for (const [left, right] of man) {
             log`  ${left.padEnd(48, " ")}  ${right}`
         }
@@ -185,7 +187,7 @@ class Program {
             { name: "json", arity: 0 },
             { name: "dry-run", arity: 0 },
             { name: "no-color", arity: 0 },
-            ...options.map(({ name, alias, arity }) => ({
+            ...options.map(({ name, alias, arity }: Option) => ({
                 name,
                 alias,
                 arity: arity ?? Infinity
