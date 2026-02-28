@@ -128,7 +128,7 @@ class Program {
             const flags = option.alias
                 ? `-${option.alias}, --${option.name}`
                 : `--${option.name}`.padStart(4, " ")
-            const args = ""
+            const args = option.hint ? ` <${option.hint}>` : ""
             let info = ""
             if (option.required) {
                 info = "(required)"
@@ -137,8 +137,10 @@ class Program {
                 const defaultValue = option.defaultValue()
                 info = `(${JSON.stringify(defaultValue)})`
             }
-            const left = `${flags}\t${args}`
-            const right = `${option.description} (${info})`
+            const left = `${flags}${args}`
+            const right = option.description
+                ? `${option.description} ${info}`.trim()
+                : info
             return [left, right]
         })
         for (const [left, right] of man) {

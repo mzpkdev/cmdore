@@ -3,6 +3,7 @@ import { CmdoreError } from "../errors"
 type Option<TName = string, TValue = string> = {
     name: TName
     description?: string
+    hint?: string
     alias?: string
     arity?: number
     required?: boolean
@@ -28,7 +29,7 @@ namespace Option {
         try {
             result = await option.validate?.(...values)
         } catch (error) {
-            throw new CmdoreError((error as Error).message)
+            throw new CmdoreError(error instanceof Error ? error.message : String(error))
         }
         if (result === false) {
             throw new CmdoreError(

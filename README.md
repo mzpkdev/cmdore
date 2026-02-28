@@ -195,12 +195,14 @@ const deployCommand = defineCommand({
     defineOption({
       name: "port",
       description: "Port number (1-65535)",
+      hint: "number",
       defaultValue: () => 3000,
       validate: (value) => z.coerce.number().int().min(1).max(65535).parse(value)
     }),
     defineOption({
       name: "replicas",
       description: "Number of replicas",
+      hint: "count",
       validate: (value) => z.coerce.number().positive().parse(value)
     })
   ],

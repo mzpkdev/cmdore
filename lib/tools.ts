@@ -93,6 +93,7 @@ export const terminal = {
                 line.close()
                 if (answer === "") {
                     resolve(prompt(message, parser))
+                    return
                 }
                 resolve(parser?.(answer) ?? (answer as TReturnValue))
             })
