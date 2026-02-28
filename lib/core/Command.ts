@@ -40,7 +40,7 @@ export type Command<
     run?: (
         this: Command<TOptionArray, TArgumentArray>,
         argv: Argv<TOptionArray, TArgumentArray>
-    ) => AsyncIterable<unknown> | Iterable<unknown> | unknown[] | unknown
+    ) => void | Promise<void> | unknown
     // [property: string]: unknown
 }
 

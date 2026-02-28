@@ -1,4 +1,4 @@
-import { defineCommand, defineOption, Program } from "cmdore"
+import { defineCommand, defineOption, Program, terminal } from "cmdore"
 
 const tokenOption = defineOption({
     name: "token",
@@ -21,10 +21,11 @@ const push = defineCommand({
     ],
     run(argv) {
         const { auth, force } = argv as typeof argv & { auth: string }
-        console.log(`Pushing with auth=${auth}`)
+        terminal.log(`Pushing with auth=${auth}`)
         if (force) {
-            console.log("Force push enabled")
+            terminal.log("Force push enabled")
         }
+        terminal.json({ action: "push", auth, force: !!force })
     }
 })
 
@@ -32,7 +33,8 @@ const status = defineCommand({
     name: "status",
     description: "Show repository status",
     run() {
-        console.log("Status: clean")
+        terminal.log("Status: clean")
+        terminal.json({ status: "clean" })
     }
 })
 

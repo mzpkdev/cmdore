@@ -1,4 +1,4 @@
-import { defineCommand, defineOption, Program } from "cmdore"
+import { defineCommand, defineOption, Program, terminal } from "cmdore"
 
 const list = defineCommand({
     name: "list",
@@ -13,11 +13,11 @@ const list = defineCommand({
             validate: (value) => parseInt(value, 10)
         })
     ],
-    async *run({ limit }) {
+    run({ limit }) {
         for (let i = 1; i <= limit; i++) {
             const item = { id: i, name: `item-${i}` }
-            console.log(`id=${item.id} name=${item.name}`)
-            yield item
+            terminal.log(`id=${item.id} name=${item.name}`)
+            terminal.json(item)
         }
     }
 })

@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest"
-import { effect } from "../tools"
+import { afterEach, describe, expect, it, vi } from "vitest"
+import { effect, terminal } from "../tools"
 import Program from "./Program"
 
 const metadata = { name: "cmdore", version: "0.0.8", description: "A test CLI" }
@@ -150,44 +150,82 @@ describe("Program.execute", () => {
         })
     })
 
-    describe("--json flag with iterable output", () => {
-        it("should serialize iterable output as JSON", async () => {
+    describe("--json flag", () => {
+        afterEach(() => {
+            terminal.jsonMode = false
+        })
+
+        it("should set terminal.jsonMode during execution", async () => {
+            const program = new Program({ metadata })
+            let captured = false
+            program.register({
+                name: "list",
+                run: () => {
+                    captured = terminal.jsonMode
+                }
+            })
+            await program.execute(["list", "--json"])
+            expect(captured).toStrictEqual(true)
+        })
+
+        it("should restore terminal.jsonMode after execution", async () => {
             const program = new Program({ metadata })
             program.register({
                 name: "list",
-                run: () => [{ id: 1 }, { id: 2 }]
+                run: () => {}
             })
-            const output: string[] = []
-            const spy = vi
-                .spyOn(console, "log")
-                .mockImplementation((...args: any[]) => {
-                    output.push(String(args[0]))
-                })
             await program.execute(["list", "--json"])
-            spy.mockRestore()
-            expect(output).toContain(JSON.stringify({ id: 1 }, null, 2))
-            expect(output).toContain(JSON.stringify({ id: 2 }, null, 2))
+            expect(terminal.jsonMode).toStrictEqual(false)
         })
 
-        it("should serialize async iterable output as JSON", async () => {
+        it("should restore terminal.jsonMode after error", async () => {
             const program = new Program({ metadata })
             program.register({
-                name: "stream",
-                run: async function* () {
-                    yield { id: 1 }
-                    yield { id: 2 }
+                name: "fail",
+                run: () => {
+                    throw new Error("boom")
+                }
+            })
+            await expect(
+                program.execute(["fail", "--json"])
+            ).rejects.toThrowError("boom")
+            expect(terminal.jsonMode).toStrictEqual(false)
+        })
+
+        it("should suppress terminal.log in json mode", async () => {
+            const program = new Program({ metadata })
+            program.register({
+                name: "list",
+                run: () => {
+                    terminal.log("human output")
+                }
+            })
+            const spy = vi.spyOn(console, "log").mockImplementation(() => {})
+            await program.execute(["list", "--json"])
+            spy.mockRestore()
+            expect(spy).not.toHaveBeenCalled()
+        })
+
+        it("should output terminal.json in json mode", async () => {
+            const program = new Program({ metadata })
+            program.register({
+                name: "list",
+                run: () => {
+                    terminal.json({ id: 1 })
+                    terminal.json({ id: 2 })
                 }
             })
             const output: string[] = []
             const spy = vi
-                .spyOn(console, "log")
+                .spyOn(process.stdout, "write")
                 .mockImplementation((...args: any[]) => {
                     output.push(String(args[0]))
+                    return true
                 })
-            await program.execute(["stream", "--json"])
+            await program.execute(["list", "--json"])
             spy.mockRestore()
-            expect(output).toContain(JSON.stringify({ id: 1 }, null, 2))
-            expect(output).toContain(JSON.stringify({ id: 2 }, null, 2))
+            expect(output).toContain(`${JSON.stringify({ id: 1 })}\n`)
+            expect(output).toContain(`${JSON.stringify({ id: 2 })}\n`)
         })
     })
 

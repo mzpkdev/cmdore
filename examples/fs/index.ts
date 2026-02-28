@@ -1,4 +1,4 @@
-import { defineCommand, Program } from "cmdore"
+import { defineCommand, Program, terminal } from "cmdore"
 
 const copy = defineCommand({
     name: "copy",
@@ -17,7 +17,8 @@ const copy = defineCommand({
         }
     ],
     run({ destination, files }) {
-        console.log(`Copying ${files.join(", ")} to ${destination}`)
+        terminal.log(`Copying ${files.join(", ")} to ${destination}`)
+        terminal.json({ action: "copy", destination, files })
     }
 })
 
@@ -42,7 +43,8 @@ const remove = defineCommand({
         }
     ],
     run({ files }) {
-        console.log(`Removing ${files.join(", ")}`)
+        terminal.log(`Removing ${files.join(", ")}`)
+        terminal.json({ action: "remove", files })
     }
 })
 

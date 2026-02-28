@@ -24,12 +24,17 @@ export const mock = <TInstance>(
 export const terminal = {
     colors: true,
     quiet: false,
+    jsonMode: false,
 
     log: (message?: string): void => {
-        if (terminal.quiet) return
+        if (terminal.quiet || terminal.jsonMode) return
         terminal.colors
             ? log(console.log)`${message}`
             : console.log(message ?? "")
+    },
+    json: (data: unknown): void => {
+        if (!terminal.jsonMode) return
+        process.stdout.write(`${JSON.stringify(data)}\n`)
     },
     verbose: (message?: string): void => {
         terminal.colors

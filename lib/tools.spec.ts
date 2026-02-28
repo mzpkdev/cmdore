@@ -82,6 +82,7 @@ describe("terminal", () => {
     afterEach(() => {
         terminal.colors = true
         terminal.quiet = false
+        terminal.jsonMode = false
         vi.restoreAllMocks()
     })
 
@@ -101,11 +102,68 @@ describe("terminal", () => {
             expect(spy).not.toHaveBeenCalled()
         })
 
+        it("should be suppressed when jsonMode is true", () => {
+            terminal.colors = false
+            terminal.jsonMode = true
+            const spy = vi.spyOn(console, "log").mockImplementation(() => {})
+            terminal.log("hello")
+            expect(spy).not.toHaveBeenCalled()
+        })
+
         it("should output empty string when no message and colors off", () => {
             terminal.colors = false
             const spy = vi.spyOn(console, "log").mockImplementation(() => {})
             terminal.log()
             expect(spy).toHaveBeenCalledWith("")
+        })
+    })
+
+    describe("json", () => {
+        it("should write JSON to stdout when jsonMode is true", () => {
+            terminal.jsonMode = true
+            const spy = vi
+                .spyOn(process.stdout, "write")
+                .mockImplementation(() => true)
+            terminal.json({ id: 1, name: "test" })
+            expect(spy).toHaveBeenCalledWith(
+                `${JSON.stringify({ id: 1, name: "test" })}\n`
+            )
+        })
+
+        it("should be silent when jsonMode is false", () => {
+            terminal.jsonMode = false
+            const spy = vi
+                .spyOn(process.stdout, "write")
+                .mockImplementation(() => true)
+            terminal.json({ id: 1 })
+            expect(spy).not.toHaveBeenCalled()
+        })
+
+        it("should stringify arrays", () => {
+            terminal.jsonMode = true
+            const spy = vi
+                .spyOn(process.stdout, "write")
+                .mockImplementation(() => true)
+            terminal.json([1, 2, 3])
+            expect(spy).toHaveBeenCalledWith(`${JSON.stringify([1, 2, 3])}\n`)
+        })
+
+        it("should stringify primitives", () => {
+            terminal.jsonMode = true
+            const spy = vi
+                .spyOn(process.stdout, "write")
+                .mockImplementation(() => true)
+            terminal.json("hello")
+            expect(spy).toHaveBeenCalledWith('"hello"\n')
+        })
+
+        it("should stringify null", () => {
+            terminal.jsonMode = true
+            const spy = vi
+                .spyOn(process.stdout, "write")
+                .mockImplementation(() => true)
+            terminal.json(null)
+            expect(spy).toHaveBeenCalledWith("null\n")
         })
     })
 

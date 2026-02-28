@@ -1,4 +1,4 @@
-import { defineCommand, effect, Program } from "cmdore"
+import { defineCommand, effect, Program, terminal } from "cmdore"
 
 const deploy = defineCommand({
     name: "deploy",
@@ -25,9 +25,11 @@ const deploy = defineCommand({
         }
     ],
     run({ environment, port }) {
-        console.log(`Deploying to ${environment} on port ${port}...`)
+        terminal.log(`Deploying to ${environment} on port ${port}...`)
+        terminal.json({ environment, port, status: "deploying" })
         effect(() => {
-            console.log(`Deployment to ${environment} complete.`)
+            terminal.log(`Deployment to ${environment} complete.`)
+            terminal.json({ environment, port, status: "complete" })
         })
     }
 })

@@ -1,7 +1,7 @@
 {
     "name": "cmdore",
     "description": "A lightweight, type-safe, and composable CLI framework for modern TypeScript applications",
-    "version": "0.0.9",
+    "version": "0.1.0",
     "main": "./lib/index.js",
     "types": "./lib/index.d.ts",
     "scripts": {

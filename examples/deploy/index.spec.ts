@@ -53,4 +53,40 @@ describe("deploy", () => {
         expect(output).toContain("Deploying to staging on port 3000...")
         expect(output).not.toContain("Deployment to staging complete.")
     })
+
+    it("should output JSON with --json", async () => {
+        const output: string[] = []
+        const spy = vi
+            .spyOn(process.stdout, "write")
+            .mockImplementation((...args: any[]) => {
+                output.push(String(args[0]))
+                return true
+            })
+        await program.execute(["deploy", "staging", "--port", "8080", "--json"])
+        spy.mockRestore()
+        expect(output).toContain(
+            `${JSON.stringify({ environment: "staging", port: 8080, status: "deploying" })}\n`
+        )
+        expect(output).toContain(
+            `${JSON.stringify({ environment: "staging", port: 8080, status: "complete" })}\n`
+        )
+    })
+
+    it("should skip json effect output with --json --dry-run", async () => {
+        const output: string[] = []
+        const spy = vi
+            .spyOn(process.stdout, "write")
+            .mockImplementation((...args: any[]) => {
+                output.push(String(args[0]))
+                return true
+            })
+        await program.execute(["deploy", "staging", "--json", "--dry-run"])
+        spy.mockRestore()
+        expect(output).toContain(
+            `${JSON.stringify({ environment: "staging", port: 3000, status: "deploying" })}\n`
+        )
+        expect(output).not.toContain(
+            `${JSON.stringify({ environment: "staging", port: 3000, status: "complete" })}\n`
+        )
+    })
 })

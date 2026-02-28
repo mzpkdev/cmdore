@@ -3,7 +3,7 @@ import log, { bold, dim } from "logtint"
 import { CmdoreError } from "../errors"
 import { findMetadata, type Metadata } from "../metadata"
 import { effect, mock, terminal } from "../tools"
-import { isAsyncIterable, isIterable } from "../utils"
+
 import Argument from "./Argument"
 import type Command from "./Command"
 import type { Argv } from "./Command"
@@ -211,6 +211,7 @@ class Program {
         const previousEffectEnabled = effect.enabled
         const previousColors = terminal.colors
         const previousQuiet = terminal.quiet
+        const previousJsonMode = terminal.jsonMode
         const mocked: (() => void)[] = []
         try {
             if (flags["no-color"]) {
@@ -218,6 +219,9 @@ class Program {
             }
             if (flags.quiet) {
                 terminal.quiet = true
+            }
+            if (flags.json) {
+                terminal.jsonMode = true
             }
             if (flags["dry-run"]) {
                 effect.enabled = false
@@ -244,7 +248,6 @@ class Program {
                     )
                 }
             }
-            const log = console.log.bind(console)
             if (!flags.verbose || flags.json) {
                 mocked.push(mock(console, "debug"), mock(console, "info"))
             }
@@ -262,18 +265,12 @@ class Program {
                     argv2 = (await interceptor(argv2)) ?? argv2
                 }
             }
-            const output = await command.run?.(argv2)
-            if (isIterable(output) || isAsyncIterable(output)) {
-                for await (const entry of output) {
-                    if (flags.json) {
-                        log(JSON.stringify(entry, null, 2))
-                    }
-                }
-            }
+            await command.run?.(argv2)
         } finally {
             effect.enabled = previousEffectEnabled
             terminal.colors = previousColors
             terminal.quiet = previousQuiet
+            terminal.jsonMode = previousJsonMode
             for (const unmock of mocked) {
                 unmock()
             }

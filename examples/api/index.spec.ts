@@ -2,23 +2,24 @@ import { describe, expect, it, vi } from "vitest"
 import { program } from "./index"
 
 describe("list", () => {
-    it("should serialize yielded items as JSON with --json", async () => {
+    it("should output JSON with --json", async () => {
         const output: string[] = []
         const spy = vi
-            .spyOn(console, "log")
+            .spyOn(process.stdout, "write")
             .mockImplementation((...args: any[]) => {
                 output.push(String(args[0]))
+                return true
             })
         await program.execute(["list", "--json"])
         spy.mockRestore()
         expect(output).toContain(
-            JSON.stringify({ id: 1, name: "item-1" }, null, 2)
+            `${JSON.stringify({ id: 1, name: "item-1" })}\n`
         )
         expect(output).toContain(
-            JSON.stringify({ id: 2, name: "item-2" }, null, 2)
+            `${JSON.stringify({ id: 2, name: "item-2" })}\n`
         )
         expect(output).toContain(
-            JSON.stringify({ id: 3, name: "item-3" }, null, 2)
+            `${JSON.stringify({ id: 3, name: "item-3" })}\n`
         )
         expect(output).toHaveLength(3)
     })
@@ -26,9 +27,10 @@ describe("list", () => {
     it("should respect --limit with --json", async () => {
         const output: string[] = []
         const spy = vi
-            .spyOn(console, "log")
+            .spyOn(process.stdout, "write")
             .mockImplementation((...args: any[]) => {
                 output.push(String(args[0]))
+                return true
             })
         await program.execute(["list", "--json", "--limit", "2"])
         spy.mockRestore()
@@ -38,15 +40,16 @@ describe("list", () => {
     it("should accept -l alias", async () => {
         const output: string[] = []
         const spy = vi
-            .spyOn(console, "log")
+            .spyOn(process.stdout, "write")
             .mockImplementation((...args: any[]) => {
                 output.push(String(args[0]))
+                return true
             })
         await program.execute(["list", "--json", "-l", "1"])
         spy.mockRestore()
         expect(output).toHaveLength(1)
         expect(output).toContain(
-            JSON.stringify({ id: 1, name: "item-1" }, null, 2)
+            `${JSON.stringify({ id: 1, name: "item-1" })}\n`
         )
     })
 
