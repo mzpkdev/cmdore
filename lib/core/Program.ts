@@ -151,7 +151,7 @@ class Program {
                 "    --dry-run",
                 "simulate the command without executing anything"
             ],
-            ["    --no-color", "disable colored output"],
+            ["    --no-colors", "disable colored output"],
             ["-v, --version", "show version"],
             ["-h, --help", "show information for program or the command"]
         ]
@@ -186,7 +186,7 @@ class Program {
             { name: "quiet", arity: 0 },
             { name: "json", arity: 0 },
             { name: "dry-run", arity: 0 },
-            { name: "no-color", arity: 0 },
+            { name: "no-colors", arity: 0 },
             ...options.map(({ name, alias, arity }: Option) => ({
                 name,
                 alias,
@@ -216,7 +216,7 @@ class Program {
         const previousJsonMode = terminal.jsonMode
         const mocked: (() => void)[] = []
         try {
-            if (flags["no-color"]) {
+            if (flags["no-colors"]) {
                 terminal.colors = false
             }
             if (flags.quiet) {

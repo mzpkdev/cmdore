@@ -229,7 +229,7 @@ describe("Program.execute", () => {
         })
     })
 
-    describe("--no-color flag", () => {
+    describe("--no-colors flag", () => {
         it("should set terminal.colors to false during execution", async () => {
             const program = new Program({ metadata })
             let captured = true
@@ -239,7 +239,7 @@ describe("Program.execute", () => {
                     captured = terminal.colors
                 }
             })
-            await program.execute(["paint", "--no-color"])
+            await program.execute(["paint", "--no-colors"])
             expect(captured).toStrictEqual(false)
         })
 
@@ -249,7 +249,7 @@ describe("Program.execute", () => {
                 name: "paint",
                 run: () => {}
             })
-            await program.execute(["paint", "--no-color"])
+            await program.execute(["paint", "--no-colors"])
             expect(terminal.colors).toStrictEqual(true)
         })
 
@@ -262,7 +262,7 @@ describe("Program.execute", () => {
                 }
             })
             await expect(
-                program.execute(["fail", "--no-color"])
+                program.execute(["fail", "--no-colors"])
             ).rejects.toThrowError("boom")
             expect(terminal.colors).toStrictEqual(true)
         })
