@@ -116,6 +116,32 @@ describe("terminal", () => {
             terminal.log()
             expect(spy).toHaveBeenCalledWith("")
         })
+
+        it("should output via console.log when colors are enabled", () => {
+            const spy = vi.spyOn(console, "log").mockImplementation(() => {})
+            terminal.log("hello")
+            expect(spy).toHaveBeenCalledOnce()
+        })
+
+        it("should be suppressed when quiet is true and colors are enabled", () => {
+            terminal.quiet = true
+            const spy = vi.spyOn(console, "log").mockImplementation(() => {})
+            terminal.log("hello")
+            expect(spy).not.toHaveBeenCalled()
+        })
+
+        it("should be suppressed when jsonMode is true and colors are enabled", () => {
+            terminal.jsonMode = true
+            const spy = vi.spyOn(console, "log").mockImplementation(() => {})
+            terminal.log("hello")
+            expect(spy).not.toHaveBeenCalled()
+        })
+
+        it("should output via console.log when no message and colors are enabled", () => {
+            const spy = vi.spyOn(console, "log").mockImplementation(() => {})
+            terminal.log()
+            expect(spy).toHaveBeenCalledOnce()
+        })
     })
 
     describe("json", () => {
@@ -182,6 +208,12 @@ describe("terminal", () => {
             terminal.verbose("debug info")
             expect(spy).toHaveBeenCalled()
         })
+
+        it("should output via console.info when colors are enabled", () => {
+            const spy = vi.spyOn(console, "info").mockImplementation(() => {})
+            terminal.verbose("debug info")
+            expect(spy).toHaveBeenCalledOnce()
+        })
     })
 
     describe("warn", () => {
@@ -194,6 +226,19 @@ describe("terminal", () => {
 
         it("should be suppressed when quiet is true", () => {
             terminal.colors = false
+            terminal.quiet = true
+            const spy = vi.spyOn(console, "warn").mockImplementation(() => {})
+            terminal.warn("watch out")
+            expect(spy).not.toHaveBeenCalled()
+        })
+
+        it("should output via console.warn when colors are enabled", () => {
+            const spy = vi.spyOn(console, "warn").mockImplementation(() => {})
+            terminal.warn("watch out")
+            expect(spy).toHaveBeenCalledOnce()
+        })
+
+        it("should be suppressed when quiet is true and colors are enabled", () => {
             terminal.quiet = true
             const spy = vi.spyOn(console, "warn").mockImplementation(() => {})
             terminal.warn("watch out")
@@ -215,6 +260,12 @@ describe("terminal", () => {
             const spy = vi.spyOn(console, "error").mockImplementation(() => {})
             terminal.error("something broke")
             expect(spy).toHaveBeenCalled()
+        })
+
+        it("should output via console.error when colors are enabled", () => {
+            const spy = vi.spyOn(console, "error").mockImplementation(() => {})
+            terminal.error("something broke")
+            expect(spy).toHaveBeenCalledOnce()
         })
     })
 

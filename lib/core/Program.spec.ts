@@ -229,6 +229,45 @@ describe("Program.execute", () => {
         })
     })
 
+    describe("--no-color flag", () => {
+        it("should set terminal.colors to false during execution", async () => {
+            const program = new Program({ metadata })
+            let captured = true
+            program.register({
+                name: "paint",
+                run: () => {
+                    captured = terminal.colors
+                }
+            })
+            await program.execute(["paint", "--no-color"])
+            expect(captured).toStrictEqual(false)
+        })
+
+        it("should restore terminal.colors after execution", async () => {
+            const program = new Program({ metadata })
+            program.register({
+                name: "paint",
+                run: () => {}
+            })
+            await program.execute(["paint", "--no-color"])
+            expect(terminal.colors).toStrictEqual(true)
+        })
+
+        it("should restore terminal.colors after error", async () => {
+            const program = new Program({ metadata })
+            program.register({
+                name: "fail",
+                run: () => {
+                    throw new Error("boom")
+                }
+            })
+            await expect(
+                program.execute(["fail", "--no-color"])
+            ).rejects.toThrowError("boom")
+            expect(terminal.colors).toStrictEqual(true)
+        })
+    })
+
     describe("option parsing", () => {
         it("should resolve option alias", async () => {
             let received: unknown = null
