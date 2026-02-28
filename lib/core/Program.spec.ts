@@ -321,26 +321,6 @@ describe("Program.intercept", () => {
         expect(intercepted).toStrictEqual(false)
     })
 
-    it("should pass modified argv from interceptor to the command", async () => {
-        let received: unknown = null
-        const program = new Program({ metadata })
-        const tokenOption = { name: "token" }
-        program.intercept([tokenOption], async (argv: any) => {
-            return { ...argv, token: "overridden" }
-        })
-        program.register({
-            name: "deploy",
-            options: [tokenOption],
-            run(argv: any) {
-                received = argv
-            }
-        })
-        await program.execute(["deploy", "--token", "original"])
-        expect((received as Record<string, unknown>).token).toStrictEqual(
-            "overridden"
-        )
-    })
-
     it("should return this for chaining", () => {
         const program = new Program({ metadata })
         const result = program.intercept([], async () => {})

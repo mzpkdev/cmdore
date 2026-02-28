@@ -11,7 +11,8 @@ describe("push", () => {
             })
         await program.execute(["push", "--token", "abc123"])
         spy.mockRestore()
-        expect(output).toContain("Pushing with auth=ABC123")
+        expect(output).toContain("Authenticating...")
+        expect(output).toContain("Pushing with token=ABC123")
     })
 
     it("should support --force flag", async () => {
@@ -23,7 +24,8 @@ describe("push", () => {
             })
         await program.execute(["push", "--token", "mytoken", "--force"])
         spy.mockRestore()
-        expect(output).toContain("Pushing with auth=MYTOKEN")
+        expect(output).toContain("Authenticating...")
+        expect(output).toContain("Pushing with token=MYTOKEN")
         expect(output).toContain("Force push enabled")
     })
 
@@ -38,7 +40,7 @@ describe("push", () => {
         await program.execute(["push", "--token", "abc123", "--json"])
         spy.mockRestore()
         expect(output).toContain(
-            `${JSON.stringify({ action: "push", auth: "ABC123", force: false })}\n`
+            `${JSON.stringify({ action: "push", token: "ABC123", force: false })}\n`
         )
     })
 
@@ -59,7 +61,7 @@ describe("push", () => {
         ])
         spy.mockRestore()
         expect(output).toContain(
-            `${JSON.stringify({ action: "push", auth: "MYTOKEN", force: true })}\n`
+            `${JSON.stringify({ action: "push", token: "MYTOKEN", force: true })}\n`
         )
     })
 
@@ -81,6 +83,7 @@ describe("status", () => {
         await program.execute(["status"])
         spy.mockRestore()
         expect(output).toContain("Status: clean")
+        expect(output).not.toContain("Authenticating")
         expect(output).not.toContain("Pushing")
     })
 

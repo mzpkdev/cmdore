@@ -17,7 +17,7 @@ class Program {
     #_metadata: Metadata | undefined
     #_commands = new Map<string, Command<any, any>>()
     #_interceptors = new Set<
-        [(argv: Argv) => Promise<Argv | void>, readonly Option[]]
+        [(argv: Argv) => Promise<void> | void, readonly Option[]]
     >()
     get metadata(): Metadata {
         if (this.#_metadata == null) {
@@ -37,10 +37,10 @@ class Program {
         TOptionArray extends readonly Option[] = readonly Option<string, any>[]
     >(
         dependencies: TOptionArray,
-        interceptor: (argv: Argv<TOptionArray>) => Promise<Argv | void>
+        interceptor: (argv: Argv<TOptionArray>) => Promise<void> | void
     ): this {
         this.#_interceptors.add([
-            interceptor as (argv: Argv) => Promise<Argv | void>,
+            interceptor as (argv: Argv) => Promise<void> | void,
             dependencies
         ])
         return this
@@ -228,7 +228,7 @@ class Program {
             if (flags["dry-run"]) {
                 effect.enabled = false
             }
-            let argv2: Argv = {}
+            const argv2: Argv = {}
             for (const option of command.options ?? []) {
                 const values: string[] | undefined =
                     flags[option.alias ?? option.name] ?? flags[option.name]
@@ -264,7 +264,7 @@ class Program {
                 if (
                     dependencies.every((dependency) => dependency.name in argv2)
                 ) {
-                    argv2 = (await interceptor(argv2)) ?? argv2
+                    await interceptor(argv2)
                 }
             }
             await command.run?.(argv2)

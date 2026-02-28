@@ -1,10 +1,4 @@
-import {
-    defineCommand,
-    defineOption,
-    type InterceptedArgv,
-    Program,
-    terminal
-} from "cmdore"
+import { defineCommand, defineOption, Program, terminal } from "cmdore"
 
 const tokenOption = defineOption({
     name: "token",
@@ -26,16 +20,12 @@ const push = defineCommand({
         })
     ],
     run(argv) {
-        const { auth, force } = argv as InterceptedArgv<
-            typeof argv,
-            "token",
-            { auth: string }
-        >
-        terminal.log(`Pushing with auth=${auth}`)
+        const { token, force } = argv
+        terminal.log(`Pushing with token=${token}`)
         if (force) {
             terminal.log("Force push enabled")
         }
-        terminal.json({ action: "push", auth, force: !!force })
+        terminal.json({ action: "push", token, force: !!force })
     }
 })
 
@@ -49,7 +39,7 @@ const status = defineCommand({
 })
 
 export const program = new Program()
-program.intercept([tokenOption], async ({ token, ...rest }) => {
-    return { ...rest, auth: token }
+program.intercept([tokenOption], () => {
+    terminal.log("Authenticating...")
 })
 program.register(push).register(status)
