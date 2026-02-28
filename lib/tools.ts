@@ -1,5 +1,5 @@
 import * as readline from "node:readline"
-import log, { dim, red, reset, yellow } from "logtint"
+import log, { dim, red, yellow } from "logtint"
 
 export const effect = async (
     callback: () => Promise<unknown> | unknown
@@ -21,90 +21,66 @@ export const mock = <TInstance>(
     }
 }
 
-export const colorConsoleLog = (): (() => void) => {
-    const original = {
-        debug: console.debug.bind(console),
-        info: console.info.bind(console),
-        log: console.log.bind(console),
-        warn: console.warn.bind(console),
-        error: console.error.bind(console)
-    }
-
-    console.debug = (...messages: string[]): void => {
-        betterLog(messages, original.debug, dim)
-    }
-
-    console.info = (...messages: string[]): void => {
-        betterLog(messages, original.info, reset)
-    }
-
-    console.log = (...messages: unknown[]): void => {
-        betterLog(messages, original.log, reset)
-    }
-
-    console.warn = (...messages: string[]): void => {
-        betterLog(messages, original.warn, yellow)
-    }
-
-    console.error = (...messages: string[]): void => {
-        betterLog(messages, original.error, red)
-    }
-
-    return () => {
-        console.debug = original.debug
-        console.info = original.info
-        console.log = original.log
-        console.warn = original.warn
-        console.error = original.error
-    }
-}
-
-const betterLog = (
-    messages: unknown[],
-    originalLog: typeof console.log,
-    color: typeof reset
-) => {
-    for (const message of messages) {
-        if (typeof message === "string") {
-            log(originalLog)`${color`${message}`}`
-        } else {
-            console.dir(message)
-        }
-    }
-}
-
-// TODO: Remove?
 export const terminal = {
+    colors: true,
+    quiet: false,
+
+    log: (message?: string): void => {
+        if (terminal.quiet) return
+        terminal.colors
+            ? log(console.log)`${message}`
+            : console.log(message ?? "")
+    },
     verbose: (message?: string): void => {
-        log(console.info)`${dim`${message}`}`
+        terminal.colors
+            ? log(console.info)`${dim`${message}`}`
+            : console.info(message ?? "")
     },
     warn: (message?: string): void => {
-        log(console.warn)`${yellow`${message}`}`
+        if (terminal.quiet) return
+        terminal.colors
+            ? log(console.warn)`${yellow`${message}`}`
+            : console.warn(message ?? "")
     },
     error: (message?: string): void => {
-        log(console.error)`${red`${message}`}`
+        terminal.colors
+            ? log(console.error)`${red`${message}`}`
+            : console.error(message ?? "")
     },
-    print: (message?: string): void => {
-        log(console.log)`${message}`
-    },
-    prompt: async function prompt<TReturnValue = string>(
+    prompt: async <TReturnValue = string>(
         message?: string,
-        parser?: (value: string) => TReturnValue
-    ): Promise<TReturnValue> {
-        return new Promise<TReturnValue>((resolve) => {
-            const { stdin, stdout } = process
-            const line = readline.createInterface({
-                input: stdin,
-                output: stdout
+        options?: {
+            parser?: (value: string) => TReturnValue
+            allowEmpty?: boolean
+            validate?: (value: string) => boolean | string
+        }
+    ): Promise<TReturnValue> => {
+        const { parser, allowEmpty = false, validate } = options ?? {}
+        const ask = (): Promise<string> => {
+            return new Promise((resolve) => {
+                const line = readline.createInterface({
+                    input: process.stdin,
+                    output: process.stdout
+                })
+                line.question(`${message ?? ""} `, (answer) => {
+                    line.close()
+                    resolve(answer)
+                })
             })
-            line.question(`${message ?? ""} `, (answer) => {
-                line.close()
-                if (answer === "") {
-                    resolve(prompt(message, parser))
-                    return
+        }
+
+        while (true) {
+            const answer = await ask()
+            if (answer === "" && !allowEmpty) continue
+            if (validate) {
+                const result = validate(answer)
+                if (result === false) continue
+                if (typeof result === "string") {
+                    terminal.warn(result)
+                    continue
                 }
-                resolve(parser?.(answer) ?? (answer as TReturnValue))
-            })
-        })
+            }
+            return parser?.(answer) ?? (answer as TReturnValue)
+        }
     }
 }

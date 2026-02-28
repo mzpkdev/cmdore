@@ -1,5 +1,17 @@
-import { describe, expect, it } from "vitest"
-import { colorConsoleLog, effect, mock } from "./tools"
+import { afterEach, describe, expect, it, vi } from "vitest"
+import { effect, mock, terminal } from "./tools"
+
+const mockAnswers: string[] = []
+let answerIndex = 0
+
+vi.mock("node:readline", () => ({
+    createInterface: () => ({
+        question: (_query: string, callback: (answer: string) => void) => {
+            callback(mockAnswers[answerIndex++] ?? "")
+        },
+        close: () => {}
+    })
+}))
 
 describe("effect", () => {
     it("should execute the callback when enabled", async () => {
@@ -66,24 +78,146 @@ describe("mock", () => {
     })
 })
 
-describe("colorConsoleLog", () => {
-    it("should return a restore function", () => {
-        const restore = colorConsoleLog()
-        expect(typeof restore).toStrictEqual("function")
-        restore()
+describe("terminal", () => {
+    afterEach(() => {
+        terminal.colors = true
+        terminal.quiet = false
+        vi.restoreAllMocks()
     })
 
-    it("should patch console methods", () => {
-        const originalLog = console.log
-        const restore = colorConsoleLog()
-        expect(console.log).not.toStrictEqual(originalLog)
-        restore()
+    describe("log", () => {
+        it("should output via console.log", () => {
+            terminal.colors = false
+            const spy = vi.spyOn(console, "log").mockImplementation(() => {})
+            terminal.log("hello")
+            expect(spy).toHaveBeenCalledWith("hello")
+        })
+
+        it("should be suppressed when quiet is true", () => {
+            terminal.colors = false
+            terminal.quiet = true
+            const spy = vi.spyOn(console, "log").mockImplementation(() => {})
+            terminal.log("hello")
+            expect(spy).not.toHaveBeenCalled()
+        })
+
+        it("should output empty string when no message and colors off", () => {
+            terminal.colors = false
+            const spy = vi.spyOn(console, "log").mockImplementation(() => {})
+            terminal.log()
+            expect(spy).toHaveBeenCalledWith("")
+        })
     })
 
-    it("should restore console methods when called", () => {
-        const restore = colorConsoleLog()
-        const patched = console.log
-        restore()
-        expect(console.log).not.toStrictEqual(patched)
+    describe("verbose", () => {
+        it("should output via console.info", () => {
+            terminal.colors = false
+            const spy = vi.spyOn(console, "info").mockImplementation(() => {})
+            terminal.verbose("debug info")
+            expect(spy).toHaveBeenCalledWith("debug info")
+        })
+
+        it("should not be suppressed when quiet is true", () => {
+            terminal.colors = false
+            terminal.quiet = true
+            const spy = vi.spyOn(console, "info").mockImplementation(() => {})
+            terminal.verbose("debug info")
+            expect(spy).toHaveBeenCalled()
+        })
+    })
+
+    describe("warn", () => {
+        it("should output via console.warn", () => {
+            terminal.colors = false
+            const spy = vi.spyOn(console, "warn").mockImplementation(() => {})
+            terminal.warn("watch out")
+            expect(spy).toHaveBeenCalledWith("watch out")
+        })
+
+        it("should be suppressed when quiet is true", () => {
+            terminal.colors = false
+            terminal.quiet = true
+            const spy = vi.spyOn(console, "warn").mockImplementation(() => {})
+            terminal.warn("watch out")
+            expect(spy).not.toHaveBeenCalled()
+        })
+    })
+
+    describe("error", () => {
+        it("should output via console.error", () => {
+            terminal.colors = false
+            const spy = vi.spyOn(console, "error").mockImplementation(() => {})
+            terminal.error("something broke")
+            expect(spy).toHaveBeenCalledWith("something broke")
+        })
+
+        it("should not be suppressed when quiet is true", () => {
+            terminal.colors = false
+            terminal.quiet = true
+            const spy = vi.spyOn(console, "error").mockImplementation(() => {})
+            terminal.error("something broke")
+            expect(spy).toHaveBeenCalled()
+        })
+    })
+
+    describe("prompt", () => {
+        const setAnswers = (...answers: string[]) => {
+            mockAnswers.length = 0
+            mockAnswers.push(...answers)
+            answerIndex = 0
+        }
+
+        it("should return user input", async () => {
+            setAnswers("hello")
+            const result = await terminal.prompt("Enter:")
+            expect(result).toStrictEqual("hello")
+        })
+
+        it("should retry on empty input by default", async () => {
+            setAnswers("", "", "finally")
+            const result = await terminal.prompt("Enter:")
+            expect(result).toStrictEqual("finally")
+        })
+
+        it("should accept empty input when allowEmpty is true", async () => {
+            setAnswers("")
+            const result = await terminal.prompt("Enter:", { allowEmpty: true })
+            expect(result).toStrictEqual("")
+        })
+
+        it("should apply parser to the answer", async () => {
+            setAnswers("42")
+            const result = await terminal.prompt("Number:", {
+                parser: (v) => parseInt(v, 10)
+            })
+            expect(result).toStrictEqual(42)
+        })
+
+        it("should retry when validate returns false", async () => {
+            setAnswers("bad", "good")
+            const result = await terminal.prompt("Enter:", {
+                validate: (v) => v === "good"
+            })
+            expect(result).toStrictEqual("good")
+        })
+
+        it("should show validation message and retry when validate returns string", async () => {
+            terminal.colors = false
+            const warnSpy = vi
+                .spyOn(console, "warn")
+                .mockImplementation(() => {})
+            setAnswers("bad", "good")
+            const result = await terminal.prompt("Enter:", {
+                validate: (v) => v === "good" || "Try again"
+            })
+            expect(result).toStrictEqual("good")
+            expect(warnSpy).toHaveBeenCalledWith("Try again")
+        })
+
+        it("should work with no message", async () => {
+            setAnswers("answer")
+            const result = await terminal.prompt()
+            expect(result).toStrictEqual("answer")
+        })
     })
 })

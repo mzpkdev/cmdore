@@ -32,4 +32,4 @@ const deploy = defineCommand({
     }
 })
 
-export const program = new Program({ colors: false }).register(deploy)
+export const program = new Program().register(deploy)

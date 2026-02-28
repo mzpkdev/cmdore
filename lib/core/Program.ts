@@ -2,7 +2,7 @@ import argvex from "argvex"
 import log, { bold, dim } from "logtint"
 import { CmdoreError } from "../errors"
 import { findMetadata, type Metadata } from "../metadata"
-import { colorConsoleLog, effect, mock } from "../tools"
+import { effect, mock, terminal } from "../tools"
 import { isAsyncIterable, isIterable } from "../utils"
 import Argument from "./Argument"
 import type Command from "./Command"
@@ -10,7 +10,6 @@ import type { Argv } from "./Command"
 import Option from "./Option"
 
 export type Configuration = {
-    colors?: boolean
     metadata?: Metadata
 }
 
@@ -28,12 +27,9 @@ class Program {
     }
 
     constructor(configuration?: Configuration) {
-        const { colors = true, metadata } = configuration ?? {}
+        const { metadata } = configuration ?? {}
         if (metadata) {
             this.#_metadata = metadata
-        }
-        if (colors) {
-            colorConsoleLog()
         }
     }
 
@@ -153,6 +149,7 @@ class Program {
                 "    --dry-run",
                 "simulate the command without executing anything"
             ],
+            ["    --no-color", "disable colored output"],
             ["-v, --version", "show version"],
             ["-h, --help", "show information for program or the command"]
         ]
@@ -187,6 +184,7 @@ class Program {
             { name: "quiet", arity: 0 },
             { name: "json", arity: 0 },
             { name: "dry-run", arity: 0 },
+            { name: "no-color", arity: 0 },
             ...options.map(({ name, alias, arity }) => ({
                 name,
                 alias,
@@ -211,8 +209,16 @@ class Program {
             throw new CmdoreError(`A command "${main}" does not exist.`)
         }
         const previousEffectEnabled = effect.enabled
+        const previousColors = terminal.colors
+        const previousQuiet = terminal.quiet
         const mocked: (() => void)[] = []
         try {
+            if (flags["no-color"]) {
+                terminal.colors = false
+            }
+            if (flags.quiet) {
+                terminal.quiet = true
+            }
             if (flags["dry-run"]) {
                 effect.enabled = false
             }
@@ -266,6 +272,8 @@ class Program {
             }
         } finally {
             effect.enabled = previousEffectEnabled
+            terminal.colors = previousColors
+            terminal.quiet = previousQuiet
             for (const unmock of mocked) {
                 unmock()
             }

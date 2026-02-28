@@ -36,7 +36,7 @@ const status = defineCommand({
     }
 })
 
-export const program = new Program({ colors: false })
+export const program = new Program()
 program.intercept([tokenOption], async ({ token, ...rest }) => {
     return { ...rest, auth: token }
 })

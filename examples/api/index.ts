@@ -22,4 +22,4 @@ const list = defineCommand({
     }
 })
 
-export const program = new Program({ colors: false }).register(list)
+export const program = new Program().register(list)

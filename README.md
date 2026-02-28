@@ -242,16 +242,16 @@ const shipStatusCommand = defineCommand({
     terminal.verbose(`Analyzing ${systemName} subsystem components...`);
 
     // Standard output (hidden with --quiet flag)
-    terminal.print(`${systemName} system diagnostic initiated`);
-    terminal.print("Primary functions operational");
+    terminal.log(`${systemName} system diagnostic initiated`);
+    terminal.log("Primary functions operational");
 
-    // Warning message (shown even with --quiet flag)
+    // Warning message (hidden with --quiet flag)
     terminal.warn("Warning: Enemy fire causing power fluctuations in forward shields");
 
-    // Error message (shown even with --quiet flag)
+    // Error message (always shown, even with --quiet flag)
     terminal.error("CRITICAL: Warp core containment field unstable after direct hit!");
 
-    terminal.print("Rerouting emergency power. Prepare for evasive maneuvers!");
+    terminal.log("Rerouting emergency power. Prepare for evasive maneuvers!");
   }
 });
 ```
@@ -280,29 +280,29 @@ const navigateAsteroidFieldCommand = defineCommand({
     terminal.verbose(`Scanning asteroid density and alien fighter positions...`);
 
     // Regular output
-    terminal.print(`Initiating ${maneuver} maneuver through asteroid field...`);
-    terminal.print(`Alien fighters detected on intercept course!`);
+    terminal.log(`Initiating ${maneuver} maneuver through asteroid field...`);
+    terminal.log(`Alien fighters detected on intercept course!`);
 
     // Interactive prompt
     const confirm = await terminal.prompt(
       `Engage auto-targeting system for alien fighters? (y/n): `,
-      value => value.toLowerCase() === 'y'
+      { parser: value => value.toLowerCase() === 'y' }
     );
 
     if (!confirm) {
-      terminal.print("Auto-targeting disengaged. Manual targeting mode active.");
+      terminal.log("Auto-targeting disengaged. Manual targeting mode active.");
     } else {
-      terminal.print("Auto-targeting engaged! Locking on to alien fighters.");
+      terminal.log("Auto-targeting engaged! Locking on to alien fighters.");
     }
 
     // The effect() function skips execution when --dry-run is used
     await effect(async () => {
       terminal.warn("Warning: Shield integrity at 50% after asteroid impact!");
       await reroute_power_to_shields();
-      terminal.print("Shields reinforced. Continuing mission.");
+      terminal.log("Shields reinforced. Continuing mission.");
     });
 
-    terminal.print("Asteroid field successfully navigated. Alien fighters destroyed!");
+    terminal.log("Asteroid field successfully navigated. Alien fighters destroyed!");
   }
 });
 ```
