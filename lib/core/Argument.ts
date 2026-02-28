@@ -32,7 +32,9 @@ namespace Argument {
         try {
             result = await argument.validate?.(value)
         } catch (error) {
-            throw new CmdoreError(error instanceof Error ? error.message : String(error))
+            throw new CmdoreError(
+                error instanceof Error ? error.message : String(error)
+            )
         }
         if (result === false) {
             throw new CmdoreError(
@@ -61,7 +63,9 @@ namespace Argument {
         try {
             result = await argument.validate?.(...values)
         } catch (error) {
-            throw new CmdoreError(error instanceof Error ? error.message : String(error))
+            throw new CmdoreError(
+                error instanceof Error ? error.message : String(error)
+            )
         }
         if (result === false) {
             throw new CmdoreError(

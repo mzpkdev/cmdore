@@ -29,7 +29,9 @@ namespace Option {
         try {
             result = await option.validate?.(...values)
         } catch (error) {
-            throw new CmdoreError(error instanceof Error ? error.message : String(error))
+            throw new CmdoreError(
+                error instanceof Error ? error.message : String(error)
+            )
         }
         if (result === false) {
             throw new CmdoreError(

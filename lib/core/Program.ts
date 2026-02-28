@@ -251,7 +251,9 @@ class Program {
                 )
             }
             for (const [interceptor, dependencies] of this.#_interceptors) {
-                if (dependencies.every((dependency) => dependency.name in argv2)) {
+                if (
+                    dependencies.every((dependency) => dependency.name in argv2)
+                ) {
                     argv2 = (await interceptor(argv2)) ?? argv2
                 }
             }
