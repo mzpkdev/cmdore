@@ -20,7 +20,6 @@ class Program {
     #_interceptors = new Set<
         [(argv: Argv) => Promise<Argv | void>, readonly Option[]]
     >()
-
     get metadata(): Metadata {
         if (this.#_metadata == null) {
             this.#_metadata = findMetadata()

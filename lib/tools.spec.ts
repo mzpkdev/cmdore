@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { effect, mock } from "./tools"
+import { colorConsoleLog, effect, mock } from "./tools"
 
 describe("effect", () => {
     it("should execute the callback when enabled", async () => {
@@ -63,5 +63,27 @@ describe("mock", () => {
         restore()
         expect(obj.greet).toStrictEqual(original)
         expect(obj.greet("world")).toStrictEqual("Hello world")
+    })
+})
+
+describe("colorConsoleLog", () => {
+    it("should return a restore function", () => {
+        const restore = colorConsoleLog()
+        expect(typeof restore).toStrictEqual("function")
+        restore()
+    })
+
+    it("should patch console methods", () => {
+        const originalLog = console.log
+        const restore = colorConsoleLog()
+        expect(console.log).not.toStrictEqual(originalLog)
+        restore()
+    })
+
+    it("should restore console methods when called", () => {
+        const restore = colorConsoleLog()
+        const patched = console.log
+        restore()
+        expect(console.log).not.toStrictEqual(patched)
     })
 })

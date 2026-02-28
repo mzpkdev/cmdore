@@ -21,7 +21,7 @@ export const mock = <TInstance>(
     }
 }
 
-export const colorConsoleLog = (): void => {
+export const colorConsoleLog = (): (() => void) => {
     const original = {
         debug: console.debug.bind(console),
         info: console.info.bind(console),
@@ -48,6 +48,14 @@ export const colorConsoleLog = (): void => {
 
     console.error = (...messages: string[]): void => {
         betterLog(messages, original.error, red)
+    }
+
+    return () => {
+        console.debug = original.debug
+        console.info = original.info
+        console.log = original.log
+        console.warn = original.warn
+        console.error = original.error
     }
 }
 
