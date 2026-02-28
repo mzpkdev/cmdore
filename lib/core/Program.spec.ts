@@ -100,6 +100,44 @@ describe("Program.execute", () => {
             expect(spy).toHaveBeenCalled()
             spy.mockRestore()
         })
+
+        it("should not crash when option default value is a BigInt", async () => {
+            const program = new Program({ metadata })
+            program.register({
+                name: "build",
+                options: [{ name: "limit", defaultValue: () => BigInt(42) }]
+            })
+            const spy = vi.spyOn(console, "log").mockImplementation(() => {})
+            await program.execute(["build", "--help"])
+            expect(spy).toHaveBeenCalled()
+            spy.mockRestore()
+        })
+
+        it("should not crash when option default value has a circular reference", async () => {
+            const program = new Program({ metadata })
+            const circular: Record<string, unknown> = { a: 1 }
+            circular.self = circular
+            program.register({
+                name: "build",
+                options: [{ name: "config", defaultValue: () => circular }]
+            })
+            const spy = vi.spyOn(console, "log").mockImplementation(() => {})
+            await program.execute(["build", "--help"])
+            expect(spy).toHaveBeenCalled()
+            spy.mockRestore()
+        })
+
+        it("should not crash when argument default value is a BigInt", async () => {
+            const program = new Program({ metadata })
+            program.register({
+                name: "build",
+                arguments: [{ name: "count", defaultValue: () => BigInt(99) }]
+            })
+            const spy = vi.spyOn(console, "log").mockImplementation(() => {})
+            await program.execute(["build", "--help"])
+            expect(spy).toHaveBeenCalled()
+            spy.mockRestore()
+        })
     })
 
     describe("--version flag", () => {

@@ -63,6 +63,13 @@ class Program {
     }
 
     help(command?: Command<any, any>): this {
+        const stringify = (value: unknown): string => {
+            try {
+                return JSON.stringify(value)
+            } catch {
+                return String(value)
+            }
+        }
         const { name, description } = this.metadata
         log``
         log`${bold(name)} - ${description}`
@@ -109,7 +116,7 @@ class Program {
                 }
                 if (arg.defaultValue) {
                     const defaultValue = arg.defaultValue()
-                    info = `(${JSON.stringify(defaultValue)})`
+                    info = `(${stringify(defaultValue)})`
                 }
                 const right = arg.description
                     ? `${arg.description} ${info}`.trim()
@@ -131,7 +138,7 @@ class Program {
                 }
                 if (option.defaultValue) {
                     const defaultValue = option.defaultValue()
-                    info = `(${JSON.stringify(defaultValue)})`
+                    info = `(${stringify(defaultValue)})`
                 }
                 const left = `${flags}${args}`
                 const right = option.description
