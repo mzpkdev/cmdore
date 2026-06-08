@@ -33,11 +33,9 @@ class Program {
         }
     }
 
-    intercept<
-        TOptionArray extends readonly Option[] = readonly Option<string, any>[]
-    >(
-        dependencies: TOptionArray,
-        interceptor: (argv: Argv<TOptionArray>) => Promise<void> | void
+    intercept<const O extends readonly Option[]>(
+        dependencies: O,
+        interceptor: (argv: Argv<O>) => Promise<void> | void
     ): this {
         this.#_interceptors.add([
             interceptor as (argv: Argv) => Promise<void> | void,
@@ -47,9 +45,9 @@ class Program {
     }
 
     register<
-        const TOptionArray extends readonly Option<string, any>[],
-        const TArgumentArray extends readonly Argument<string, any>[]
-    >(command: Command<TOptionArray, TArgumentArray>): this {
+        const O extends readonly Option[],
+        const A extends readonly Argument[]
+    >(command: Command<O, A>): this {
         const args = command.arguments ?? []
         for (let i = 0; i < args.length; i++) {
             if (args[i].variadic && i !== args.length - 1) {
@@ -62,7 +60,7 @@ class Program {
         return this
     }
 
-    help(command?: Command<any, any>): this {
+    help(command?: Command): this {
         const { name, description } = this.metadata
         log``
         log`${bold(name)} - ${description}`
@@ -228,7 +226,7 @@ class Program {
             if (flags["dry-run"]) {
                 effect.enabled = false
             }
-            const argv2: Argv = {}
+            const argv2: Record<string, unknown> = {}
             for (const option of command.options ?? []) {
                 const values: string[] | undefined =
                     flags[option.alias ?? option.name] ?? flags[option.name]
@@ -264,10 +262,10 @@ class Program {
                 if (
                     dependencies.every((dependency) => dependency.name in argv2)
                 ) {
-                    await interceptor(argv2)
+                    await interceptor(argv2 as Argv)
                 }
             }
-            await command.run?.(argv2)
+            await command.run?.(argv2 as Argv)
         } finally {
             effect.enabled = previousEffectEnabled
             terminal.colors = previousColors

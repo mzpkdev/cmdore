@@ -1,16 +1,14 @@
 import { CmdoreError } from "../errors"
 
-type Option<TName = string, TValue = string> = {
-    name: TName
+type Option = {
+    name: string
     description?: string
     hint?: string
     alias?: string
     arity?: number
     required?: boolean
-    defaultValue?: () => TValue
-    validate?: (
-        ...values: string[]
-    ) => TValue | void | boolean | Promise<TValue | void | boolean>
+    defaultValue?: () => unknown
+    validate?: (...values: string[]) => unknown
 }
 
 namespace Option {
@@ -44,8 +42,6 @@ namespace Option {
     }
 }
 
-export const defineOption = <TName extends string, TValue = string>(
-    option: Option<TName, TValue>
-): Option<TName, TValue> => option
+export const defineOption = <const T extends Option>(option: T): T => option
 
 export default Option

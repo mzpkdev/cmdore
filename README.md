@@ -82,6 +82,30 @@ npm install cmdore
 
 Learn how to create and register commands with cmdore:
 
+> [!NOTE]
+> **Option values are `string[]` by default — and the types say so.** An option collects *every* token
+> it matches into an array, so `--pilot maverick` gives you `["maverick"]`. The inferred type of
+> `argv.pilot` is `string[]`, matching the runtime value exactly — no surprises, nothing to guard against.
+>
+> To receive a scalar (or any other shape), add a `validate` function. cmdore infers the option's type
+> from whatever `validate` returns:
+>
+> ```typescript
+> { name: "pilot", validate: (value) => value }          // → string
+> { name: "count", validate: (value) => Number(value) }  // → number
+> { name: "tags" }                                        // → string[] (no validate)
+> { name: "force", arity: 0 }                             // → string[] (runtime value is [])
+> ```
+>
+> `arity: 0` (a boolean-flag style option) still yields `string[]`; its runtime value is an empty array
+> `[]`, which is truthy-checked like a flag — it is **not** typed `boolean`. If a `defaultValue` is
+> present without a `validate`, the option takes that function's return type instead.
+>
+> Inline option objects are typed precisely on their own — the `defineOption` wrapper below is optional
+> and only needed when you want to define a reusable, named option. The examples below pass
+> `validate: (value) => value` wherever an option is read as a single string. See
+> [How to validate and parse](#how-to-validate-and-parse) for the full story.
+
 #### 🎮 Basic Command
 
 Start your Space Defender mission with a simple command:
@@ -89,20 +113,20 @@ Start your Space Defender mission with a simple command:
 ```typescript
 const app = new Program();
 
-const startMissionCommand = {
-  name: "start-mission",
-  description: "Launch your Space Defender spacecraft",
-  options: [
-    { name: "pilot", description: "Pilot callsign" },
-    { name: "difficulty", description: "Mission difficulty" }
-  ],
-  run: ({ pilot, difficulty }) => {
-    console.log(`Attention ${pilot || 'Cadet'}! Launching spacecraft in ${difficulty || 'Standard'} difficulty.`);
-    console.log(`Prepare to defend Earth from the alien invasion!`);
-  }
-};
-
-app.register(startMissionCommand).execute(process.argv.slice(2));
+app
+  .register({
+    name: "start-mission",
+    description: "Launch your Space Defender spacecraft",
+    options: [
+      { name: "pilot", description: "Pilot callsign", validate: (value) => value },
+      { name: "difficulty", description: "Mission difficulty", validate: (value) => value }
+    ],
+    run: ({ pilot, difficulty }) => {
+      console.log(`Attention ${pilot || 'Cadet'}! Launching spacecraft in ${difficulty || 'Standard'} difficulty.`);
+      console.log(`Prepare to defend Earth from the alien invasion!`);
+    }
+  })
+  .execute(process.argv.slice(2));
 ```
 
 #### 🕹️ Helper Functions
@@ -121,13 +145,15 @@ const configureShipCommand = defineCommand({
       name: "weapons",
       description: "Weapon system to equip",
       alias: "w",
-      required: true
+      required: true,
+      validate: (value) => value
     }),
     defineOption({
       name: "shield",
       description: "Shield technology to deploy",
       alias: "s",
-      required: true
+      required: true,
+      validate: (value) => value
     })
   ],
   run: ({ weapons, shield }) => {
@@ -233,10 +259,11 @@ const shipStatusCommand = defineCommand({
       name: "system-name",
       description: "Name of the ship system to check",
       alias: "s",
-      required: true
+      required: true,
+      validate: (value) => value
     })
   ],
-  run: ({ systemName }) => {
+  run: ({ "system-name": systemName }) => {
     // Only shown with --verbose flag
     terminal.verbose("Initiating deep system diagnostic scan...");
     terminal.verbose(`Analyzing ${systemName} subsystem components...`);
@@ -271,7 +298,8 @@ const navigateAsteroidFieldCommand = defineCommand({
       name: "maneuver",
       description: "Flight maneuver pattern to use",
       alias: "m",
-      defaultValue: () => "evasive-delta"
+      defaultValue: () => "evasive-delta",
+      validate: (value) => value
     })
   ],
   run: async ({ maneuver }) => {
@@ -319,10 +347,11 @@ const missionReportCommand = defineCommand({
     defineOption({
       name: "battle-id",
       description: "Battle identifier code",
-      required: true
+      required: true,
+      validate: (value) => value
     })
   ],
-  run: ({ battleId }) => {
+  run: ({ "battle-id": battleId }) => {
     console.log(`Generating mission report for Battle: ${battleId}`);
     console.log("Transmitting data to Space Command HQ...");
 

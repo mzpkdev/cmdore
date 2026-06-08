@@ -1,54 +1,56 @@
 import type Argument from "./Argument"
 import type Option from "./Option"
 
-export type Argv<
-    TOptionArray extends readonly Option[] = readonly Option<string, any>[],
-    TArgumentArray extends readonly Argument[] = readonly Argument<
-        string,
-        any
-    >[]
-> = {
-    [TKey in TOptionArray[number] as TKey["name"]]: TKey extends Option<
-        any,
-        infer TValue
-    >
-        ? TValue
-        : unknown
-} & {
-    [TKey in TArgumentArray[number] as TKey["name"]]: TKey extends Argument<
-        any,
-        infer TValue
-    >
-        ? TKey["variadic"] extends true
-            ? TValue[]
-            : TValue
-        : unknown
+type Value<E, Default> = E extends {
+    validate: (...a: any[]) => infer R
 }
+    ? [Exclude<Awaited<R>, void | boolean>] extends [never]
+        ? Default
+        : Exclude<Awaited<R>, void | boolean>
+    : E extends { defaultValue: () => infer D }
+      ? D
+      : Default
+
+type Options<O extends readonly Option[]> = number extends O["length"]
+    ? {}
+    : {
+          [E in O[number] as E["name"] & string]: Value<E, string[]>
+      }
+
+type Arguments<A extends readonly Argument[]> = number extends A["length"]
+    ? {}
+    : {
+          [E in A[number] as E["name"] & string]: E extends { variadic: true }
+              ? Value<E, string>[]
+              : Value<E, string>
+      }
+
+export type Argv<
+    O extends readonly Option[] = readonly Option[],
+    A extends readonly Argument[] = readonly Argument[]
+> = Options<O> & Arguments<A>
 
 export type Command<
-    TOptionArray extends readonly Option<string, any>[] = readonly Option[],
-    TArgumentArray extends readonly Argument<
-        string,
-        any
-    >[] = readonly Argument[]
+    O extends readonly Option[] = readonly Option[],
+    A extends readonly Argument[] = readonly Argument[]
 > = {
     name: string
     description?: string
     examples?: string[]
-    arguments?: TArgumentArray
-    options?: TOptionArray
+    arguments?: A
+    options?: O
     run?: (
-        this: Command<TOptionArray, TArgumentArray>,
-        argv: Argv<TOptionArray, TArgumentArray>
+        this: Command<O, A>,
+        argv: Argv<O, A>
     ) => void | Promise<void> | unknown
     // [property: string]: unknown
 }
 
 export const defineCommand = <
-    const TOptionArray extends readonly Option<string, any>[],
-    const TArgumentArray extends readonly Argument<string, any>[]
+    const O extends readonly Option[],
+    const A extends readonly Argument[]
 >(
-    command: Command<TOptionArray, TArgumentArray>
-): Command<TOptionArray, TArgumentArray> => command
+    command: Command<O, A>
+): Command<O, A> => command
 
 export default Command
