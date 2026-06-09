@@ -276,7 +276,15 @@ const run = async (
                 await handler(argv2 as Argv)
             }
         }
-        await command.run?.(argv2 as Argv)
+        if (!command.run) {
+            throw new CmdoreError(
+                `Command "${command.name}" has no run handler.`,
+                {
+                    code: "cmdore.missingRunHandler"
+                }
+            )
+        }
+        await command.run(argv2 as Argv)
     } finally {
         effect.enabled = previousEffectEnabled
         terminal.colors = previousColors

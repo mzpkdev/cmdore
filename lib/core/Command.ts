@@ -62,7 +62,7 @@ export type Command<
     examples?: string[]
     arguments?: TArguments
     options?: TOptions
-    run?: (
+    run: (
         this: Command<TOptions, TArguments>,
         argv: Argv<TOptions, TArguments>
     ) => void | Promise<void> | unknown
