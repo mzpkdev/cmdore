@@ -1,10 +1,23 @@
-import { afterEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { CmdoreError } from "../errors"
 import { effect, terminal } from "../tools"
 import type Command from "./Command"
 import { execute, intercept } from "./execute"
 import type { StandardSchemaV1 } from "./StandardSchema"
 
 const metadata = { name: "cmdore", version: "0.0.8", description: "A test CLI" }
+
+// process.exitCode hygiene: execute() sets process.exitCode on the error path,
+// which would otherwise leak into the vitest run and make `npm test` exit
+// non-zero even when every assertion passes. Save and restore it around each
+// test.
+let previousExitCode: typeof process.exitCode
+beforeEach(() => {
+    previousExitCode = process.exitCode
+})
+afterEach(() => {
+    process.exitCode = previousExitCode ?? 0
+})
 
 const numberSchema: StandardSchemaV1<number> = {
     "~standard": {
@@ -41,10 +54,22 @@ describe("execute - command dispatch", () => {
         expect(ran).toStrictEqual(["build", "test"])
     })
 
-    it("should throw when command does not exist", async () => {
+    it("should render and set exitCode when command does not exist", async () => {
+        const spy = vi.spyOn(console, "error").mockImplementation(() => {})
         await expect(
             execute([], { argv: ["nonexistent"], metadata })
-        ).rejects.toThrowError(`A command "nonexistent" does not exist.`)
+        ).resolves.toBeUndefined()
+        const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
+        const exitCode = process.exitCode
+        spy.mockRestore()
+        expect(output).toContain(`A command "nonexistent" does not exist.`)
+        expect(exitCode).toStrictEqual(1)
+    })
+
+    it("should tag the unknown-command error with code cmdore.unknownCommand", async () => {
+        await expect(
+            execute([], { argv: ["nonexistent"], metadata, onError: "throw" })
+        ).rejects.toMatchObject({ code: "cmdore.unknownCommand" })
     })
 
     it("should call the run function with parsed argv", async () => {
@@ -90,6 +115,142 @@ describe("execute - command dispatch", () => {
         }
         await execute([command], { argv: ["build"], metadata })
         expect(receivedThis).toStrictEqual(command)
+    })
+})
+
+describe("execute - error handling", () => {
+    it("should render the message and resolve when run throws", async () => {
+        const spy = vi.spyOn(console, "error").mockImplementation(() => {})
+        await expect(
+            execute(
+                [
+                    {
+                        name: "fail",
+                        run: () => {
+                            throw new Error("boom")
+                        }
+                    }
+                ],
+                { argv: ["fail"], metadata }
+            )
+        ).resolves.toBeUndefined()
+        const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
+        spy.mockRestore()
+        expect(output).toContain("boom")
+    })
+
+    it("should set process.exitCode to 1 for a plain Error", async () => {
+        const spy = vi.spyOn(console, "error").mockImplementation(() => {})
+        await execute(
+            [
+                {
+                    name: "fail",
+                    run: () => {
+                        throw new Error("boom")
+                    }
+                }
+            ],
+            { argv: ["fail"], metadata }
+        )
+        const exitCode = process.exitCode
+        spy.mockRestore()
+        expect(exitCode).toStrictEqual(1)
+    })
+
+    it("should use the CmdoreError's exitCode", async () => {
+        const spy = vi.spyOn(console, "error").mockImplementation(() => {})
+        await execute(
+            [
+                {
+                    name: "fail",
+                    run: () => {
+                        throw new CmdoreError("custom", { exitCode: 42 })
+                    }
+                }
+            ],
+            { argv: ["fail"], metadata }
+        )
+        const exitCode = process.exitCode
+        spy.mockRestore()
+        expect(exitCode).toStrictEqual(42)
+    })
+
+    it("should stringify and render a non-Error throw", async () => {
+        const spy = vi.spyOn(console, "error").mockImplementation(() => {})
+        const thrown = "string failure"
+        await execute(
+            [
+                {
+                    name: "fail",
+                    run: () => Promise.reject(thrown)
+                }
+            ],
+            { argv: ["fail"], metadata }
+        )
+        const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
+        const exitCode = process.exitCode
+        spy.mockRestore()
+        expect(output).toContain("string failure")
+        expect(exitCode).toStrictEqual(1)
+    })
+
+    it("should print the stack with --verbose", async () => {
+        const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+        const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {})
+        const error = new Error("boom")
+        await execute(
+            [
+                {
+                    name: "fail",
+                    run: () => {
+                        throw error
+                    }
+                }
+            ],
+            { argv: ["fail", "--verbose"], metadata }
+        )
+        const infoOutput = infoSpy.mock.calls
+            .map((call) => String(call[0]))
+            .join("\n")
+        errorSpy.mockRestore()
+        infoSpy.mockRestore()
+        expect(infoOutput).toContain("Error: boom")
+    })
+
+    it("should rethrow the original error with onError: 'throw'", async () => {
+        const error = new CmdoreError("explode", { code: "cmdore.custom" })
+        await expect(
+            execute(
+                [
+                    {
+                        name: "fail",
+                        run: () => {
+                            throw error
+                        }
+                    }
+                ],
+                { argv: ["fail"], metadata, onError: "throw" }
+            )
+        ).rejects.toBe(error)
+    })
+
+    it("should not touch process.exitCode with onError: 'throw'", async () => {
+        const error = new Error("boom")
+        process.exitCode = 0
+        await expect(
+            execute(
+                [
+                    {
+                        name: "fail",
+                        run: () => {
+                            throw error
+                        }
+                    }
+                ],
+                { argv: ["fail"], metadata, onError: "throw" }
+            )
+        ).rejects.toBe(error)
+        expect(process.exitCode).toStrictEqual(0)
     })
 })
 
@@ -338,19 +499,19 @@ describe("execute - --json flag", () => {
     })
 
     it("should restore terminal.jsonMode after error", async () => {
-        await expect(
-            execute(
-                [
-                    {
-                        name: "fail",
-                        run: () => {
-                            throw new Error("boom")
-                        }
+        const spy = vi.spyOn(console, "error").mockImplementation(() => {})
+        await execute(
+            [
+                {
+                    name: "fail",
+                    run: () => {
+                        throw new Error("boom")
                     }
-                ],
-                { argv: ["fail", "--json"], metadata }
-            )
-        ).rejects.toThrowError("boom")
+                }
+            ],
+            { argv: ["fail", "--json"], metadata }
+        )
+        spy.mockRestore()
         expect(terminal.jsonMode).toStrictEqual(false)
     })
 
@@ -424,19 +585,19 @@ describe("execute - --no-colors flag", () => {
     })
 
     it("should restore terminal.colors after error", async () => {
-        await expect(
-            execute(
-                [
-                    {
-                        name: "fail",
-                        run: () => {
-                            throw new Error("boom")
-                        }
+        const spy = vi.spyOn(console, "error").mockImplementation(() => {})
+        await execute(
+            [
+                {
+                    name: "fail",
+                    run: () => {
+                        throw new Error("boom")
                     }
-                ],
-                { argv: ["fail", "--no-colors"], metadata }
-            )
-        ).rejects.toThrowError("boom")
+                }
+            ],
+            { argv: ["fail", "--no-colors"], metadata }
+        )
+        spy.mockRestore()
         expect(terminal.colors).toStrictEqual(true)
     })
 })
@@ -476,7 +637,8 @@ describe("execute - option parsing", () => {
         expect(received).toStrictEqual({ port: "8080" })
     })
 
-    it("should throw when a required option is missing", async () => {
+    it("should render and set exitCode when a required option is missing", async () => {
+        const spy = vi.spyOn(console, "error").mockImplementation(() => {})
         await expect(
             execute(
                 [
@@ -487,7 +649,12 @@ describe("execute - option parsing", () => {
                 ],
                 { argv: ["deploy"], metadata }
             )
-        ).rejects.toThrowError(`An option "env" is required.`)
+        ).resolves.toBeUndefined()
+        const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
+        const exitCode = process.exitCode
+        spy.mockRestore()
+        expect(output).toContain(`An option "env" is required.`)
+        expect(exitCode).toStrictEqual(1)
     })
 
     it("should use schema result in argv", async () => {
@@ -513,7 +680,8 @@ describe("execute - option parsing", () => {
         expect(received).toStrictEqual({ port: 3000 })
     })
 
-    it("should throw a CmdoreError when a schema rejects", async () => {
+    it("should render and set exitCode when a schema rejects", async () => {
+        const spy = vi.spyOn(console, "error").mockImplementation(() => {})
         await expect(
             execute(
                 [
@@ -530,7 +698,12 @@ describe("execute - option parsing", () => {
                 ],
                 { argv: ["serve", "--port", "abc"], metadata }
             )
-        ).rejects.toThrowError("not a number")
+        ).resolves.toBeUndefined()
+        const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
+        const exitCode = process.exitCode
+        spy.mockRestore()
+        expect(output).toContain("not a number")
+        expect(exitCode).toStrictEqual(1)
     })
 })
 
@@ -625,7 +798,8 @@ describe("execute - positional arguments", () => {
         })
     })
 
-    it("should throw when required positional argument is missing", async () => {
+    it("should render and set exitCode when required positional argument is missing", async () => {
+        const spy = vi.spyOn(console, "error").mockImplementation(() => {})
         await expect(
             execute(
                 [
@@ -636,7 +810,12 @@ describe("execute - positional arguments", () => {
                 ],
                 { argv: ["deploy"], metadata }
             )
-        ).rejects.toThrowError(`An argument "target" is required.`)
+        ).resolves.toBeUndefined()
+        const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
+        const exitCode = process.exitCode
+        spy.mockRestore()
+        expect(output).toContain(`An argument "target" is required.`)
+        expect(exitCode).toStrictEqual(1)
     })
 
     it("should use defaultValue when positional argument is absent", async () => {
@@ -738,7 +917,8 @@ describe("execute - positional arguments", () => {
         expect(received).toStrictEqual({ target: "production", force: true })
     })
 
-    it("should throw when variadic argument is not the last", async () => {
+    it("should render and set exitCode when variadic argument is not the last", async () => {
+        const spy = vi.spyOn(console, "error").mockImplementation(() => {})
         await expect(
             execute(
                 [
@@ -752,9 +932,31 @@ describe("execute - positional arguments", () => {
                 ],
                 { argv: ["bad"], metadata }
             )
-        ).rejects.toThrowError(
+        ).resolves.toBeUndefined()
+        const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
+        const exitCode = process.exitCode
+        spy.mockRestore()
+        expect(output).toContain(
             `A variadic argument "files" must be the last argument.`
         )
+        expect(exitCode).toStrictEqual(1)
+    })
+
+    it("should tag the variadic error with code cmdore.invalidArgument", async () => {
+        await expect(
+            execute(
+                [
+                    {
+                        name: "bad",
+                        arguments: [
+                            { name: "files", variadic: true },
+                            { name: "target" }
+                        ]
+                    }
+                ],
+                { argv: ["bad"], metadata, onError: "throw" }
+            )
+        ).rejects.toMatchObject({ code: "cmdore.invalidArgument" })
     })
 
     it("should show arguments in help output", async () => {

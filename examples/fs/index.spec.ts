@@ -1,5 +1,16 @@
-import { describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { program } from "./index"
+
+// execute() now funnels errors: it renders the message and sets
+// process.exitCode instead of rejecting. Save/restore process.exitCode so the
+// error-path tests below don't leak a non-zero exit into the vitest run.
+let previousExitCode: typeof process.exitCode
+beforeEach(() => {
+    previousExitCode = process.exitCode
+})
+afterEach(() => {
+    process.exitCode = previousExitCode ?? 0
+})
 
 describe("copy", () => {
     it("should copy multiple files to a destination", async () => {
@@ -32,10 +43,14 @@ describe("copy", () => {
         })
     })
 
-    it("should throw when destination is missing", async () => {
-        await expect(program(["copy"])).rejects.toThrowError(
-            'An argument "destination" is required.'
-        )
+    it("should render an error when destination is missing", async () => {
+        const spy = vi.spyOn(console, "error").mockImplementation(() => {})
+        await expect(program(["copy"])).resolves.toBeUndefined()
+        const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
+        const exitCode = process.exitCode
+        spy.mockRestore()
+        expect(output).toContain('An argument "destination" is required.')
+        expect(exitCode).toStrictEqual(1)
     })
 })
 
@@ -69,9 +84,13 @@ describe("remove", () => {
         })
     })
 
-    it("should throw when --confirm is missing", async () => {
-        await expect(program(["remove", "a.ts"])).rejects.toThrowError(
-            'An option "confirm" is required.'
-        )
+    it("should render an error when --confirm is missing", async () => {
+        const spy = vi.spyOn(console, "error").mockImplementation(() => {})
+        await expect(program(["remove", "a.ts"])).resolves.toBeUndefined()
+        const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
+        const exitCode = process.exitCode
+        spy.mockRestore()
+        expect(output).toContain('An option "confirm" is required.')
+        expect(exitCode).toStrictEqual(1)
     })
 })

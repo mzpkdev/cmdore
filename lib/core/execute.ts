@@ -26,6 +26,7 @@ export type Configuration = {
     argv?: string[]
     metadata?: Metadata
     interceptors?: Interceptor[]
+    onError?: "exit" | "throw"
 }
 
 const help = (
@@ -135,16 +136,32 @@ const version = (metadata: Metadata): void => {
     log`v${metadata.version}`
 }
 
-export const execute = (
+export const execute = async (
     commands: readonly Command<any, any>[],
     config?: Configuration
 ): Promise<void> => {
     const {
         argv = process.argv.slice(2),
         metadata = findMetadata(),
-        interceptors = []
+        interceptors = [],
+        onError = "exit"
     } = config ?? {}
-    return run(commands, argv, metadata, interceptors)
+    try {
+        await run(commands, argv, metadata, interceptors)
+    } catch (error) {
+        if (onError === "throw") {
+            throw error
+        }
+        terminal.error(error instanceof Error ? error.message : String(error))
+        if (
+            argv.includes("--verbose") &&
+            error instanceof Error &&
+            error.stack
+        ) {
+            terminal.verbose(error.stack)
+        }
+        process.exitCode = error instanceof CmdoreError ? error.exitCode : 1
+    }
 }
 
 const run = async (
@@ -158,7 +175,8 @@ const run = async (
         for (let i = 0; i < args.length; i++) {
             if (args[i].variadic && i !== args.length - 1) {
                 throw new CmdoreError(
-                    `A variadic argument "${args[i].name}" must be the last argument.`
+                    `A variadic argument "${args[i].name}" must be the last argument.`,
+                    { code: "cmdore.invalidArgument" }
                 )
             }
         }
@@ -199,7 +217,9 @@ const run = async (
         return
     }
     if (command == null) {
-        throw new CmdoreError(`A command "${main}" does not exist.`)
+        throw new CmdoreError(`A command "${main}" does not exist.`, {
+            code: "cmdore.unknownCommand"
+        })
     }
     const previousEffectEnabled = effect.enabled
     const previousColors = terminal.colors

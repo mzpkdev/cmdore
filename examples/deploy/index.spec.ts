@@ -1,5 +1,16 @@
-import { describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { program } from "./index"
+
+// execute() now funnels errors: it renders the message and sets
+// process.exitCode instead of rejecting. Save/restore process.exitCode so the
+// error-path tests below don't leak a non-zero exit into the vitest run.
+let previousExitCode: typeof process.exitCode
+beforeEach(() => {
+    previousExitCode = process.exitCode
+})
+afterEach(() => {
+    process.exitCode = previousExitCode ?? 0
+})
 
 describe("deploy", () => {
     it("should deploy to a valid environment with custom port", async () => {
@@ -27,16 +38,26 @@ describe("deploy", () => {
         expect(output).toContain("Deploying to production on port 3000...")
     })
 
-    it("should reject invalid environment", async () => {
-        await expect(program(["deploy", "dev"])).rejects.toThrowError(
-            'Invalid environment "dev".'
-        )
+    it("should render an error for invalid environment", async () => {
+        const spy = vi.spyOn(console, "error").mockImplementation(() => {})
+        await expect(program(["deploy", "dev"])).resolves.toBeUndefined()
+        const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
+        const exitCode = process.exitCode
+        spy.mockRestore()
+        expect(output).toContain('Invalid environment "dev".')
+        expect(exitCode).toStrictEqual(1)
     })
 
-    it("should reject invalid port", async () => {
+    it("should render an error for invalid port", async () => {
+        const spy = vi.spyOn(console, "error").mockImplementation(() => {})
         await expect(
             program(["deploy", "staging", "--port", "0"])
-        ).rejects.toThrowError('Invalid port "0".')
+        ).resolves.toBeUndefined()
+        const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
+        const exitCode = process.exitCode
+        spy.mockRestore()
+        expect(output).toContain('Invalid port "0".')
+        expect(exitCode).toStrictEqual(1)
     })
 
     it("should skip effect with --dry-run", async () => {

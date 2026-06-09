@@ -1,5 +1,16 @@
-import { describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { program } from "./index"
+
+// execute() now funnels errors: it renders the message and sets
+// process.exitCode instead of rejecting. Save/restore process.exitCode so the
+// error-path tests below don't leak a non-zero exit into the vitest run.
+let previousExitCode: typeof process.exitCode
+beforeEach(() => {
+    previousExitCode = process.exitCode
+})
+afterEach(() => {
+    process.exitCode = previousExitCode ?? 0
+})
 
 describe("push", () => {
     it("should push with intercepted auth token", async () => {
@@ -65,10 +76,14 @@ describe("push", () => {
         })
     })
 
-    it("should throw when --token is missing", async () => {
-        await expect(program(["push"])).rejects.toThrowError(
-            'An option "token" is required.'
-        )
+    it("should render an error when --token is missing", async () => {
+        const spy = vi.spyOn(console, "error").mockImplementation(() => {})
+        await expect(program(["push"])).resolves.toBeUndefined()
+        const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
+        const exitCode = process.exitCode
+        spy.mockRestore()
+        expect(output).toContain('An option "token" is required.')
+        expect(exitCode).toStrictEqual(1)
     })
 })
 
