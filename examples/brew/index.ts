@@ -1,4 +1,4 @@
-import { defineArgument, defineCommand, defineOption, Program } from "cmdore"
+import { defineArgument, defineCommand, defineOption, execute } from "cmdore"
 
 const make = defineCommand({
     name: "make",
@@ -24,4 +24,4 @@ const make = defineCommand({
     }
 })
 
-new Program().register(make).execute()
+execute([make])

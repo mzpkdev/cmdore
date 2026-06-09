@@ -1,56 +1,79 @@
 import type Argument from "./Argument"
 import type Option from "./Option"
+import type { StandardSchemaV1 } from "./StandardSchema"
 
-type Value<E, Default> = E extends {
-    validate: (...a: any[]) => infer R
+type Value<TElement, TDefault> = TElement extends {
+    schema: StandardSchemaV1
 }
-    ? [Exclude<Awaited<R>, void | boolean>] extends [never]
-        ? Default
-        : Exclude<Awaited<R>, void | boolean>
-    : E extends { defaultValue: () => infer D }
-      ? D
-      : Default
+    ? StandardSchemaV1.InferOutput<TElement["schema"]>
+    : TElement extends { defaultValue: () => infer TDefaultValue }
+      ? TDefaultValue
+      : TDefault
 
-type Options<O extends readonly Option[]> = number extends O["length"]
-    ? {}
-    : {
-          [E in O[number] as E["name"] & string]: Value<E, string[]>
-      }
+type Raw<TElement> = TElement extends { arity: 0 }
+    ? boolean
+    : TElement extends { arity: 1 }
+      ? string
+      : string[]
 
-type Arguments<A extends readonly Argument[]> = number extends A["length"]
-    ? {}
-    : {
-          [E in A[number] as E["name"] & string]: E extends { variadic: true }
-              ? Value<E, string>[]
-              : Value<E, string>
-      }
+type Present<TElement> = TElement extends { required: true }
+    ? true
+    : TElement extends { arity: 0 }
+      ? true
+      : TElement extends { defaultValue: (...a: any[]) => any }
+        ? true
+        : false
+
+type Options<TOptions extends readonly Option[]> =
+    number extends TOptions["length"]
+        ? // biome-ignore lint/complexity/noBannedTypes: {} is the "no known keys" fallback when the array isn't a const tuple; it intersects cleanly in Argv and is the firewall against deep-nesting TS2589
+          {}
+        : {
+              [TElement in TOptions[number] as TElement["name"] &
+                  string]: Present<TElement> extends true
+                  ? Value<TElement, Raw<TElement>>
+                  : Value<TElement, Raw<TElement>> | undefined
+          }
+
+type Arguments<TArguments extends readonly Argument[]> =
+    number extends TArguments["length"]
+        ? // biome-ignore lint/complexity/noBannedTypes: {} is the "no known keys" fallback when the array isn't a const tuple; it intersects cleanly in Argv and is the firewall against deep-nesting TS2589
+          {}
+        : {
+              [TElement in TArguments[number] as TElement["name"] &
+                  string]: TElement extends { variadic: true }
+                  ? Value<TElement, string[]>
+                  : Present<TElement> extends true
+                    ? Value<TElement, string>
+                    : Value<TElement, string> | undefined
+          }
 
 export type Argv<
-    O extends readonly Option[] = readonly Option[],
-    A extends readonly Argument[] = readonly Argument[]
-> = Options<O> & Arguments<A>
+    TOptions extends readonly Option[] = readonly Option[],
+    TArguments extends readonly Argument[] = readonly Argument[]
+> = Options<TOptions> & Arguments<TArguments>
 
 export type Command<
-    O extends readonly Option[] = readonly Option[],
-    A extends readonly Argument[] = readonly Argument[]
+    TOptions extends readonly Option[] = readonly Option[],
+    TArguments extends readonly Argument[] = readonly Argument[]
 > = {
     name: string
     description?: string
     examples?: string[]
-    arguments?: A
-    options?: O
+    arguments?: TArguments
+    options?: TOptions
     run?: (
-        this: Command<O, A>,
-        argv: Argv<O, A>
+        this: Command<TOptions, TArguments>,
+        argv: Argv<TOptions, TArguments>
     ) => void | Promise<void> | unknown
     // [property: string]: unknown
 }
 
 export const defineCommand = <
-    const O extends readonly Option[],
-    const A extends readonly Argument[]
+    const TOptions extends readonly Option[],
+    const TArguments extends readonly Argument[]
 >(
-    command: Command<O, A>
-): Command<O, A> => command
+    command: Command<TOptions, TArguments>
+): Command<TOptions, TArguments> => command
 
 export default Command

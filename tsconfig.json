@@ -31,5 +31,11 @@
             }
         ]
     },
-    "exclude": ["node_modules", "**/*.spec.ts", "vitest.config.ts", "examples"]
+    "exclude": [
+        "node_modules",
+        "**/*.spec.ts",
+        "**/*.test-d.ts",
+        "vitest.config.ts",
+        "examples"
+    ]
 }

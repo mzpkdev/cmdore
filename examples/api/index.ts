@@ -1,4 +1,23 @@
-import { defineCommand, defineOption, Program, terminal } from "cmdore"
+import {
+    defineCommand,
+    defineOption,
+    execute,
+    type StandardSchemaV1,
+    terminal
+} from "cmdore"
+
+const numberSchema: StandardSchemaV1<number> = {
+    "~standard": {
+        version: 1,
+        vendor: "api-example",
+        validate: (value) => {
+            const n = Number(value)
+            return Number.isNaN(n)
+                ? { issues: [{ message: `"${value}" is not a number.` }] }
+                : { value: n }
+        }
+    }
+}
 
 const list = defineCommand({
     name: "list",
@@ -8,9 +27,10 @@ const list = defineCommand({
         defineOption({
             name: "limit",
             alias: "l",
+            arity: 1,
             description: "Number of items to return",
             defaultValue: () => 3,
-            validate: (value) => parseInt(value, 10)
+            schema: numberSchema
         })
     ],
     run({ limit }) {
@@ -22,4 +42,5 @@ const list = defineCommand({
     }
 })
 
-export const program = new Program().register(list)
+export const program = (argv?: string[]): Promise<void> =>
+    execute([list], { argv })

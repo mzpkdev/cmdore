@@ -9,7 +9,7 @@ describe("push", () => {
             .mockImplementation((...args: any[]) => {
                 output.push(String(args[0]))
             })
-        await program.execute(["push", "--token", "abc123"])
+        await program(["push", "--token", "abc123"])
         spy.mockRestore()
         expect(output).toContain("Authenticating...")
         expect(output).toContain("Pushing with token=ABC123")
@@ -22,7 +22,7 @@ describe("push", () => {
             .mockImplementation((...args: any[]) => {
                 output.push(String(args[0]))
             })
-        await program.execute(["push", "--token", "mytoken", "--force"])
+        await program(["push", "--token", "mytoken", "--force"])
         spy.mockRestore()
         expect(output).toContain("Authenticating...")
         expect(output).toContain("Pushing with token=MYTOKEN")
@@ -37,11 +37,14 @@ describe("push", () => {
                 output.push(String(args[0]))
                 return true
             })
-        await program.execute(["push", "--token", "abc123", "--json"])
+        await program(["push", "--token", "abc123", "--json"])
         spy.mockRestore()
-        expect(output).toContain(
-            `${JSON.stringify({ action: "push", token: "ABC123", force: false })}\n`
-        )
+        const lines = output.map((line) => JSON.parse(line))
+        expect(lines).toContainEqual({
+            action: "push",
+            token: "ABC123",
+            force: false
+        })
     })
 
     it("should include force in JSON output", async () => {
@@ -52,21 +55,18 @@ describe("push", () => {
                 output.push(String(args[0]))
                 return true
             })
-        await program.execute([
-            "push",
-            "--token",
-            "mytoken",
-            "--force",
-            "--json"
-        ])
+        await program(["push", "--token", "mytoken", "--force", "--json"])
         spy.mockRestore()
-        expect(output).toContain(
-            `${JSON.stringify({ action: "push", token: "MYTOKEN", force: true })}\n`
-        )
+        const lines = output.map((line) => JSON.parse(line))
+        expect(lines).toContainEqual({
+            action: "push",
+            token: "MYTOKEN",
+            force: true
+        })
     })
 
     it("should throw when --token is missing", async () => {
-        await expect(program.execute(["push"])).rejects.toThrowError(
+        await expect(program(["push"])).rejects.toThrowError(
             'An option "token" is required.'
         )
     })
@@ -80,7 +80,7 @@ describe("status", () => {
             .mockImplementation((...args: any[]) => {
                 output.push(String(args[0]))
             })
-        await program.execute(["status"])
+        await program(["status"])
         spy.mockRestore()
         expect(output).toContain("Status: clean")
         expect(output).not.toContain("Authenticating")
@@ -95,8 +95,9 @@ describe("status", () => {
                 output.push(String(args[0]))
                 return true
             })
-        await program.execute(["status", "--json"])
+        await program(["status", "--json"])
         spy.mockRestore()
-        expect(output).toContain(`${JSON.stringify({ status: "clean" })}\n`)
+        const lines = output.map((line) => JSON.parse(line))
+        expect(lines).toContainEqual({ status: "clean" })
     })
 })
