@@ -51,9 +51,9 @@ const help = (
 }
 
 const helpCommand = (command: Command, metadata: Metadata): void => {
-    const { name, description } = metadata
+    const { name } = metadata
     log``
-    log`${bold(name)} - ${description}`
+    log`${bold(`${name} ${command.name}`)} - ${command.description ?? ""}`
     log``
     log`${bold(dim`USAGE`)}`
     const argsSummary = (command.arguments ?? [])
