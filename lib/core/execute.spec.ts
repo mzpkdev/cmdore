@@ -987,3 +987,205 @@ describe("execute - positional arguments", () => {
         expect(output).toContain("ARGUMENTS")
     })
 })
+
+describe("execute - repeated variadic options", () => {
+    it("should accumulate values across repeated occurrences of a variadic option", async () => {
+        let received: unknown = null
+        await execute(
+            [
+                {
+                    name: "open",
+                    options: [{ name: "repos" }],
+                    run(argv: any) {
+                        received = argv
+                    }
+                }
+            ],
+            { argv: ["open", "--repos", "a", "--repos", "b"], metadata }
+        )
+        expect(received).toStrictEqual({ repos: ["a", "b"] })
+    })
+
+    it("should treat `--x a --x b` the same as `--x a b`", async () => {
+        let split: unknown = null
+        let inline: unknown = null
+        await execute(
+            [
+                {
+                    name: "open",
+                    options: [{ name: "repos" }],
+                    run(argv: any) {
+                        split = argv
+                    }
+                }
+            ],
+            { argv: ["open", "--repos", "a", "--repos", "b"], metadata }
+        )
+        await execute(
+            [
+                {
+                    name: "open",
+                    options: [{ name: "repos" }],
+                    run(argv: any) {
+                        inline = argv
+                    }
+                }
+            ],
+            { argv: ["open", "--repos", "a", "b"], metadata }
+        )
+        expect(split).toStrictEqual({ repos: ["a", "b"] })
+        expect(inline).toStrictEqual(split)
+    })
+
+    it("should accumulate across alias and long-form occurrences", async () => {
+        let received: unknown = null
+        await execute(
+            [
+                {
+                    name: "open",
+                    options: [{ name: "repos", alias: "r" }],
+                    run(argv: any) {
+                        received = argv
+                    }
+                }
+            ],
+            { argv: ["open", "-r", "a", "--repos", "b"], metadata }
+        )
+        expect(received).toStrictEqual({ repos: ["a", "b"] })
+    })
+
+    it("should keep last-wins for a repeated single-value (arity 1) option", async () => {
+        let received: unknown = null
+        await execute(
+            [
+                {
+                    name: "serve",
+                    options: [{ name: "port", arity: 1 }],
+                    run(argv: any) {
+                        received = argv
+                    }
+                }
+            ],
+            { argv: ["serve", "--port", "3000", "--port", "4000"], metadata }
+        )
+        expect(received).toStrictEqual({ port: "4000" })
+    })
+
+    it("should not leak a repeated arity-1 value into a positional argument", async () => {
+        let received: unknown = null
+        await execute(
+            [
+                {
+                    name: "serve",
+                    arguments: [{ name: "target" }],
+                    options: [{ name: "port", arity: 1 }],
+                    run(argv: any) {
+                        received = argv
+                    }
+                }
+            ],
+            {
+                argv: ["serve", "host", "--port", "3000", "--port", "4000"],
+                metadata
+            }
+        )
+        expect(received).toStrictEqual({ target: "host", port: "4000" })
+    })
+})
+
+describe("execute - unknown flag rejection", () => {
+    it("should reject an unknown long flag with a clear message", async () => {
+        const spy = vi.spyOn(console, "error").mockImplementation(() => {})
+        await expect(
+            execute([{ name: "open", run: () => {} }], {
+                argv: ["open", "--bogus"],
+                metadata
+            })
+        ).resolves.toBeUndefined()
+        const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
+        const exitCode = process.exitCode
+        spy.mockRestore()
+        expect(output).toContain(`An option "--bogus" is unknown.`)
+        expect(exitCode).toStrictEqual(1)
+    })
+
+    it("should tag the unknown-flag error with code cmdore.unknownFlag", async () => {
+        await expect(
+            execute([{ name: "open", run: () => {} }], {
+                argv: ["open", "--bogus"],
+                metadata,
+                onError: "throw"
+            })
+        ).rejects.toMatchObject({ code: "cmdore.unknownFlag" })
+    })
+
+    it("should reject an unknown short flag", async () => {
+        await expect(
+            execute([{ name: "open", run: () => {} }], {
+                argv: ["open", "-x"],
+                metadata,
+                onError: "throw"
+            })
+        ).rejects.toMatchObject({ code: "cmdore.unknownFlag" })
+    })
+
+    it("should reject an unknown flag written in --name=value form", async () => {
+        await expect(
+            execute([{ name: "open", run: () => {} }], {
+                argv: ["open", "--bogus=1"],
+                metadata,
+                onError: "throw"
+            })
+        ).rejects.toMatchObject({ code: "cmdore.unknownFlag" })
+    })
+
+    it("should accept a defined global flag (--dry-run)", async () => {
+        let ran = false
+        await execute(
+            [
+                {
+                    name: "open",
+                    run: () => {
+                        ran = true
+                    }
+                }
+            ],
+            { argv: ["open", "--dry-run"], metadata, onError: "throw" }
+        )
+        expect(ran).toStrictEqual(true)
+    })
+
+    it("should accept a defined per-command option", async () => {
+        let received: unknown = null
+        await execute(
+            [
+                {
+                    name: "open",
+                    options: [{ name: "repos" }],
+                    run(argv: any) {
+                        received = argv
+                    }
+                }
+            ],
+            { argv: ["open", "--repos", "a"], metadata, onError: "throw" }
+        )
+        expect(received).toStrictEqual({ repos: ["a"] })
+    })
+
+    it("should not treat tokens after `--` as unknown flags", async () => {
+        let received: unknown = null
+        await execute(
+            [
+                {
+                    name: "open",
+                    arguments: [{ name: "files", variadic: true }],
+                    run(argv: any) {
+                        received = argv
+                    }
+                }
+            ],
+            { argv: ["open", "--", "--bogus"], metadata, onError: "throw" }
+        )
+        expect(received).toStrictEqual({ files: ["--bogus"] })
+    })
+})

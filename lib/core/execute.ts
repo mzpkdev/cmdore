@@ -198,11 +198,60 @@ const run = async (
             arity: arity ?? Infinity
         }))
     ]
+    // Reject genuinely-undefined flags before parsing. argvex is left in strict
+    // mode below as a backstop, but doing the check here lets us surface a typed
+    // CmdoreError (code cmdore.unknownFlag) with a clear message instead of
+    // leaking argvex's generic "unrecognized or misplaced" text. Known tokens
+    // are the global flags plus every per-command option name and alias.
+    const known = new Set<string>()
+    for (const { name, alias } of schema) {
+        known.add(name)
+        if (alias != null) {
+            known.add(alias)
+        }
+    }
+    for (const arg of argv) {
+        // Everything after "--" is an operand, never a flag.
+        if (arg === "--") {
+            break
+        }
+        if (arg.startsWith("--")) {
+            const eq = arg.indexOf("=", 2)
+            const name = eq === -1 ? arg.slice(2) : arg.slice(2, eq)
+            if (name.length > 0 && !known.has(name)) {
+                throw new CmdoreError(`An option "--${name}" is unknown.`, {
+                    code: "cmdore.unknownFlag"
+                })
+            }
+        } else if (arg.startsWith("-") && arg.length > 1) {
+            // Short flags may be grouped (e.g. -abc); every alias must be known.
+            for (const alias of arg.slice(1)) {
+                if (!known.has(alias)) {
+                    throw new CmdoreError(`An option "-${alias}" is unknown.`, {
+                        code: "cmdore.unknownFlag"
+                    })
+                }
+            }
+        }
+    }
     const { _: operands, ...flags } = argvex({
         argv,
         schema,
         strict: true,
         override: true
+    })
+    // Second parse with override:false so a repeated variadic option
+    // accumulates its values across occurrences (--x a --x b -> [a, b]) instead
+    // of last-wins. Only variadic options read from this result; single-value
+    // (arity 1) and boolean (arity 0) options keep their last-wins semantics
+    // from the override:true parse above, and operands also come from there
+    // (override:false would mis-detach trailing values of repeated arity-1
+    // flags into the operand list).
+    const accumulated = argvex({
+        argv,
+        schema,
+        strict: true,
+        override: false
     })
     if (flags.help || main == null) {
         if (command == null) {
@@ -241,8 +290,13 @@ const run = async (
         }
         const argv2: Record<string, unknown> = {}
         for (const option of command.options ?? []) {
+            // A variadic option (arity unset or anything other than 0/1) reads
+            // its accumulated values so repeated occurrences merge; arity 0/1
+            // options keep last-wins from the primary (override:true) parse.
+            const arity = option.arity ?? Infinity
+            const source = arity === 0 || arity === 1 ? flags : accumulated
             const values: string[] | undefined =
-                flags[option.alias ?? option.name] ?? flags[option.name]
+                source[option.alias ?? option.name] ?? source[option.name]
             argv2[option.name] = await Option.parse(option, values)
         }
         const args = command.arguments ?? []
