@@ -31,8 +31,11 @@
             }
         ]
     },
+    "include": ["lib/**/*.ts"],
     "exclude": [
         "node_modules",
+        "lib/**/*.d.ts",
+        "lib/**/*.js",
         "**/*.spec.ts",
         "**/*.test-d.ts",
         "vitest.config.ts",
