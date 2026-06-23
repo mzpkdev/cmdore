@@ -1,21 +1,32 @@
 import { CmdoreError } from "../errors"
+import type { StandardSchemaV1 } from "./StandardSchema"
 
-type Argument<
-    TName = string,
-    TValue = string,
-    TVariadic extends boolean = boolean
-> = {
-    name: TName
+type Argument = {
+    name: string
     description?: string
     required?: boolean
-    variadic?: TVariadic
-    defaultValue?: () => TValue
-    validate?: (
-        ...values: string[]
-    ) => TValue | void | boolean | Promise<TValue | void | boolean>
+    variadic?: boolean
+    defaultValue?: () => unknown
+    schema?: StandardSchemaV1<unknown>
 }
 
 namespace Argument {
+    const validate = async (
+        argument: Argument,
+        input: string | string[]
+    ): Promise<unknown> => {
+        if (argument.schema == null) {
+            return input
+        }
+        const result = await argument.schema["~standard"].validate(input)
+        if (result.issues) {
+            throw new CmdoreError(
+                result.issues.map((issue) => issue.message).join("; ")
+            )
+        }
+        return result.value
+    }
+
     export const parse = async (
         argument: Argument,
         value: string | undefined
@@ -28,23 +39,7 @@ namespace Argument {
             }
             return argument.defaultValue?.()
         }
-        let result: Awaited<ReturnType<NonNullable<Argument["validate"]>>>
-        try {
-            result = await argument.validate?.(value)
-        } catch (error) {
-            throw new CmdoreError(
-                error instanceof Error ? error.message : String(error)
-            )
-        }
-        if (result === false) {
-            throw new CmdoreError(
-                `An argument "${argument.name}" does not accept "${value}" as a value.`
-            )
-        }
-        if (result !== true && result !== undefined) {
-            return result
-        }
-        return value
+        return validate(argument, value)
     }
 
     export const parseVariadic = async (
@@ -57,34 +52,20 @@ namespace Argument {
                     `An argument "${argument.name}" is required.`
                 )
             }
-            return argument.defaultValue?.()
+            if (argument.defaultValue) {
+                return argument.defaultValue()
+            }
+            return []
         }
-        let result: Awaited<ReturnType<NonNullable<Argument["validate"]>>>
-        try {
-            result = await argument.validate?.(...values)
-        } catch (error) {
-            throw new CmdoreError(
-                error instanceof Error ? error.message : String(error)
-            )
-        }
-        if (result === false) {
-            throw new CmdoreError(
-                `An argument "${argument.name}" does not accept "${values.join(" ")}" as a value.`
-            )
-        }
-        if (result !== true && result !== undefined) {
-            return result
-        }
-        return values
+        return validate(argument, values)
     }
 }
 
 export const defineArgument = <
-    TName extends string,
-    TValue = string,
-    TVariadic extends boolean = false
+    const TArgument extends Argument &
+        Record<Exclude<keyof TArgument, keyof Argument>, never>
 >(
-    argument: Argument<TName, TValue, TVariadic>
-): Argument<TName, TValue, TVariadic> => argument
+    argument: TArgument
+): TArgument => argument
 
 export default Argument

@@ -10,17 +10,12 @@ describe("list", () => {
                 output.push(String(args[0]))
                 return true
             })
-        await program.execute(["list", "--json"])
+        await program(["list", "--json"])
         spy.mockRestore()
-        expect(output).toContain(
-            `${JSON.stringify({ id: 1, name: "item-1" })}\n`
-        )
-        expect(output).toContain(
-            `${JSON.stringify({ id: 2, name: "item-2" })}\n`
-        )
-        expect(output).toContain(
-            `${JSON.stringify({ id: 3, name: "item-3" })}\n`
-        )
+        const lines = output.map((line) => JSON.parse(line))
+        expect(lines).toContainEqual({ id: 1, name: "item-1" })
+        expect(lines).toContainEqual({ id: 2, name: "item-2" })
+        expect(lines).toContainEqual({ id: 3, name: "item-3" })
         expect(output).toHaveLength(3)
     })
 
@@ -32,7 +27,7 @@ describe("list", () => {
                 output.push(String(args[0]))
                 return true
             })
-        await program.execute(["list", "--json", "--limit", "2"])
+        await program(["list", "--json", "--limit", "2"])
         spy.mockRestore()
         expect(output).toHaveLength(2)
     })
@@ -45,12 +40,11 @@ describe("list", () => {
                 output.push(String(args[0]))
                 return true
             })
-        await program.execute(["list", "--json", "-l", "1"])
+        await program(["list", "--json", "-l", "1"])
         spy.mockRestore()
         expect(output).toHaveLength(1)
-        expect(output).toContain(
-            `${JSON.stringify({ id: 1, name: "item-1" })}\n`
-        )
+        const lines = output.map((line) => JSON.parse(line))
+        expect(lines).toContainEqual({ id: 1, name: "item-1" })
     })
 
     it("should log human-readable output without --json", async () => {
@@ -60,7 +54,7 @@ describe("list", () => {
             .mockImplementation((...args: any[]) => {
                 output.push(String(args[0]))
             })
-        await program.execute(["list"])
+        await program(["list"])
         spy.mockRestore()
         expect(output).toContain("id=1 name=item-1")
         expect(output).toContain("id=2 name=item-2")

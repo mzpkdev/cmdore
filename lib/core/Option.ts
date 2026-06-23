@@ -1,19 +1,28 @@
 import { CmdoreError } from "../errors"
+import type { StandardSchemaV1 } from "./StandardSchema"
 
-type Option<TName = string, TValue = string> = {
-    name: TName
+type Option = {
+    name: string
     description?: string
     hint?: string
     alias?: string
     arity?: number
     required?: boolean
-    defaultValue?: () => TValue
-    validate?: (
-        ...values: string[]
-    ) => TValue | void | boolean | Promise<TValue | void | boolean>
+    defaultValue?: () => unknown
+    schema?: StandardSchemaV1<unknown>
 }
 
 namespace Option {
+    const raw = (option: Option, values: string[]): unknown => {
+        if (option.arity === 0) {
+            return true
+        }
+        if (option.arity === 1) {
+            return values[0]
+        }
+        return values
+    }
+
     export const parse = async (
         option: Option,
         values: string[] | undefined
@@ -22,30 +31,30 @@ namespace Option {
             if (option.required) {
                 throw new CmdoreError(`An option "${option.name}" is required.`)
             }
-            return option.defaultValue?.()
+            if (option.defaultValue) {
+                return option.defaultValue()
+            }
+            return option.arity === 0 ? false : undefined
         }
-        let result: Awaited<ReturnType<NonNullable<Option["validate"]>>>
-        try {
-            result = await option.validate?.(...values)
-        } catch (error) {
+        const input = raw(option, values)
+        if (option.schema == null) {
+            return input
+        }
+        const result = await option.schema["~standard"].validate(input)
+        if (result.issues) {
             throw new CmdoreError(
-                error instanceof Error ? error.message : String(error)
+                result.issues.map((issue) => issue.message).join("; ")
             )
         }
-        if (result === false) {
-            throw new CmdoreError(
-                `An option "${option.name}" does not accept "${values.join(" ")}" as an argument.`
-            )
-        }
-        if (result !== true && result !== undefined) {
-            return result
-        }
-        return values
+        return result.value
     }
 }
 
-export const defineOption = <TName extends string, TValue = string>(
-    option: Option<TName, TValue>
-): Option<TName, TValue> => option
+export const defineOption = <
+    const TOption extends Option &
+        Record<Exclude<keyof TOption, keyof Option>, never>
+>(
+    option: TOption
+): TOption => option
 
 export default Option

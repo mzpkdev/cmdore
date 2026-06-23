@@ -1,5 +1,16 @@
-import { describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { program } from "./index"
+
+// execute() now funnels errors: it renders the message and sets
+// process.exitCode instead of rejecting. Save/restore process.exitCode so the
+// error-path tests below don't leak a non-zero exit into the vitest run.
+let previousExitCode: typeof process.exitCode
+beforeEach(() => {
+    previousExitCode = process.exitCode
+})
+afterEach(() => {
+    process.exitCode = previousExitCode ?? 0
+})
 
 describe("deploy", () => {
     it("should deploy to a valid environment with custom port", async () => {
@@ -9,7 +20,7 @@ describe("deploy", () => {
             .mockImplementation((...args: any[]) => {
                 output.push(String(args[0]))
             })
-        await program.execute(["deploy", "staging", "--port", "8080"])
+        await program(["deploy", "staging", "--port", "8080"])
         spy.mockRestore()
         expect(output).toContain("Deploying to staging on port 8080...")
         expect(output).toContain("Deployment to staging complete.")
@@ -22,23 +33,31 @@ describe("deploy", () => {
             .mockImplementation((...args: any[]) => {
                 output.push(String(args[0]))
             })
-        await program.execute(["deploy", "production"])
+        await program(["deploy", "production"])
         spy.mockRestore()
         expect(output).toContain("Deploying to production on port 3000...")
     })
 
-    it("should reject invalid environment", async () => {
-        await expect(program.execute(["deploy", "dev"])).rejects.toThrowError(
-            'An argument "environment" does not accept "dev" as a value.'
-        )
+    it("should render an error for invalid environment", async () => {
+        const spy = vi.spyOn(console, "error").mockImplementation(() => {})
+        await expect(program(["deploy", "dev"])).resolves.toBeUndefined()
+        const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
+        const exitCode = process.exitCode
+        spy.mockRestore()
+        expect(output).toContain('Invalid environment "dev".')
+        expect(exitCode).toStrictEqual(1)
     })
 
-    it("should reject invalid port", async () => {
+    it("should render an error for invalid port", async () => {
+        const spy = vi.spyOn(console, "error").mockImplementation(() => {})
         await expect(
-            program.execute(["deploy", "staging", "--port", "0"])
-        ).rejects.toThrowError(
-            'An option "port" does not accept "0" as an argument.'
-        )
+            program(["deploy", "staging", "--port", "0"])
+        ).resolves.toBeUndefined()
+        const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
+        const exitCode = process.exitCode
+        spy.mockRestore()
+        expect(output).toContain('Invalid port "0".')
+        expect(exitCode).toStrictEqual(1)
     })
 
     it("should skip effect with --dry-run", async () => {
@@ -48,7 +67,7 @@ describe("deploy", () => {
             .mockImplementation((...args: any[]) => {
                 output.push(String(args[0]))
             })
-        await program.execute(["deploy", "staging", "--dry-run"])
+        await program(["deploy", "staging", "--dry-run"])
         spy.mockRestore()
         expect(output).toContain("Deploying to staging on port 3000...")
         expect(output).not.toContain("Deployment to staging complete.")
@@ -62,14 +81,19 @@ describe("deploy", () => {
                 output.push(String(args[0]))
                 return true
             })
-        await program.execute(["deploy", "staging", "--port", "8080", "--json"])
+        await program(["deploy", "staging", "--port", "8080", "--json"])
         spy.mockRestore()
-        expect(output).toContain(
-            `${JSON.stringify({ environment: "staging", port: 8080, status: "deploying" })}\n`
-        )
-        expect(output).toContain(
-            `${JSON.stringify({ environment: "staging", port: 8080, status: "complete" })}\n`
-        )
+        const lines = output.map((line) => JSON.parse(line))
+        expect(lines).toContainEqual({
+            environment: "staging",
+            port: 8080,
+            status: "deploying"
+        })
+        expect(lines).toContainEqual({
+            environment: "staging",
+            port: 8080,
+            status: "complete"
+        })
     })
 
     it("should skip json effect output with --json --dry-run", async () => {
@@ -80,13 +104,18 @@ describe("deploy", () => {
                 output.push(String(args[0]))
                 return true
             })
-        await program.execute(["deploy", "staging", "--json", "--dry-run"])
+        await program(["deploy", "staging", "--json", "--dry-run"])
         spy.mockRestore()
-        expect(output).toContain(
-            `${JSON.stringify({ environment: "staging", port: 3000, status: "deploying" })}\n`
-        )
-        expect(output).not.toContain(
-            `${JSON.stringify({ environment: "staging", port: 3000, status: "complete" })}\n`
-        )
+        const lines = output.map((line) => JSON.parse(line))
+        expect(lines).toContainEqual({
+            environment: "staging",
+            port: 3000,
+            status: "deploying"
+        })
+        expect(lines).not.toContainEqual({
+            environment: "staging",
+            port: 3000,
+            status: "complete"
+        })
     })
 })

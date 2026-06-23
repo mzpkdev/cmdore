@@ -1,7 +1,7 @@
 {
     "name": "cmdore",
     "description": "A lightweight, type-safe, and composable CLI framework for modern TypeScript applications",
-    "version": "0.1.1",
+    "version": "0.4.0",
     "main": "./lib/index.js",
     "types": "./lib/index.d.ts",
     "scripts": {
@@ -22,7 +22,7 @@
         "ts-patch": "^3.2.1",
         "typescript": "^5.5.4",
         "typescript-transform-paths": "^3.4.11",
-        "vitest": "^3.2.4"
+        "vitest": "^4.1.8"
     },
     "author": "Mateusz Pietrzak",
     "license": "MIT",

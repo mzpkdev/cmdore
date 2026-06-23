@@ -1,10 +1,26 @@
-import { defineCommand, defineOption, Program, terminal } from "cmdore"
+import {
+    defineCommand,
+    defineOption,
+    execute,
+    intercept,
+    type StandardSchemaV1,
+    terminal
+} from "cmdore"
+
+const upperCaseSchema: StandardSchemaV1<string> = {
+    "~standard": {
+        version: 1,
+        vendor: "git-example",
+        validate: (value) => ({ value: String(value).toUpperCase() })
+    }
+}
 
 const tokenOption = defineOption({
     name: "token",
     required: true,
+    arity: 1,
     description: "Authentication token",
-    validate: (value) => value.toUpperCase()
+    schema: upperCaseSchema
 })
 
 const push = defineCommand({
@@ -38,8 +54,12 @@ const status = defineCommand({
     }
 })
 
-export const program = new Program()
-program.intercept([tokenOption], () => {
-    terminal.log("Authenticating...")
-})
-program.register(push).register(status)
+export const program = (argv?: string[]): Promise<void> =>
+    execute([push, status], {
+        argv,
+        interceptors: [
+            intercept([tokenOption], () => {
+                terminal.log("Authenticating...")
+            })
+        ]
+    })

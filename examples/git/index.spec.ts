@@ -1,5 +1,16 @@
-import { describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { program } from "./index"
+
+// execute() now funnels errors: it renders the message and sets
+// process.exitCode instead of rejecting. Save/restore process.exitCode so the
+// error-path tests below don't leak a non-zero exit into the vitest run.
+let previousExitCode: typeof process.exitCode
+beforeEach(() => {
+    previousExitCode = process.exitCode
+})
+afterEach(() => {
+    process.exitCode = previousExitCode ?? 0
+})
 
 describe("push", () => {
     it("should push with intercepted auth token", async () => {
@@ -9,7 +20,7 @@ describe("push", () => {
             .mockImplementation((...args: any[]) => {
                 output.push(String(args[0]))
             })
-        await program.execute(["push", "--token", "abc123"])
+        await program(["push", "--token", "abc123"])
         spy.mockRestore()
         expect(output).toContain("Authenticating...")
         expect(output).toContain("Pushing with token=ABC123")
@@ -22,7 +33,7 @@ describe("push", () => {
             .mockImplementation((...args: any[]) => {
                 output.push(String(args[0]))
             })
-        await program.execute(["push", "--token", "mytoken", "--force"])
+        await program(["push", "--token", "mytoken", "--force"])
         spy.mockRestore()
         expect(output).toContain("Authenticating...")
         expect(output).toContain("Pushing with token=MYTOKEN")
@@ -37,11 +48,14 @@ describe("push", () => {
                 output.push(String(args[0]))
                 return true
             })
-        await program.execute(["push", "--token", "abc123", "--json"])
+        await program(["push", "--token", "abc123", "--json"])
         spy.mockRestore()
-        expect(output).toContain(
-            `${JSON.stringify({ action: "push", token: "ABC123", force: false })}\n`
-        )
+        const lines = output.map((line) => JSON.parse(line))
+        expect(lines).toContainEqual({
+            action: "push",
+            token: "ABC123",
+            force: false
+        })
     })
 
     it("should include force in JSON output", async () => {
@@ -52,23 +66,24 @@ describe("push", () => {
                 output.push(String(args[0]))
                 return true
             })
-        await program.execute([
-            "push",
-            "--token",
-            "mytoken",
-            "--force",
-            "--json"
-        ])
+        await program(["push", "--token", "mytoken", "--force", "--json"])
         spy.mockRestore()
-        expect(output).toContain(
-            `${JSON.stringify({ action: "push", token: "MYTOKEN", force: true })}\n`
-        )
+        const lines = output.map((line) => JSON.parse(line))
+        expect(lines).toContainEqual({
+            action: "push",
+            token: "MYTOKEN",
+            force: true
+        })
     })
 
-    it("should throw when --token is missing", async () => {
-        await expect(program.execute(["push"])).rejects.toThrowError(
-            'An option "token" is required.'
-        )
+    it("should render an error when --token is missing", async () => {
+        const spy = vi.spyOn(console, "error").mockImplementation(() => {})
+        await expect(program(["push"])).resolves.toBeUndefined()
+        const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
+        const exitCode = process.exitCode
+        spy.mockRestore()
+        expect(output).toContain('An option "token" is required.')
+        expect(exitCode).toStrictEqual(1)
     })
 })
 
@@ -80,7 +95,7 @@ describe("status", () => {
             .mockImplementation((...args: any[]) => {
                 output.push(String(args[0]))
             })
-        await program.execute(["status"])
+        await program(["status"])
         spy.mockRestore()
         expect(output).toContain("Status: clean")
         expect(output).not.toContain("Authenticating")
@@ -95,8 +110,9 @@ describe("status", () => {
                 output.push(String(args[0]))
                 return true
             })
-        await program.execute(["status", "--json"])
+        await program(["status", "--json"])
         spy.mockRestore()
-        expect(output).toContain(`${JSON.stringify({ status: "clean" })}\n`)
+        const lines = output.map((line) => JSON.parse(line))
+        expect(lines).toContainEqual({ status: "clean" })
     })
 })

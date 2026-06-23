@@ -1,6 +1,51 @@
 import { describe, expect, it } from "vitest"
 import { CmdoreError } from "../errors"
 import Argument, { defineArgument } from "./Argument"
+import type { StandardSchemaV1 } from "./StandardSchema"
+
+const numberSchema: StandardSchemaV1<number> = {
+    "~standard": {
+        version: 1,
+        vendor: "test",
+        validate: (value) => {
+            const n = Number(value)
+            return Number.isNaN(n)
+                ? { issues: [{ message: "not a number" }] }
+                : { value: n }
+        }
+    }
+}
+
+const rejectSchema: StandardSchemaV1<never> = {
+    "~standard": {
+        version: 1,
+        vendor: "test",
+        validate: () => ({ issues: [{ message: "rejected" }] })
+    }
+}
+
+const upperSchema: StandardSchemaV1<string[]> = {
+    "~standard": {
+        version: 1,
+        vendor: "test",
+        validate: (value) => ({
+            value: (value as string[]).map((v) => v.toUpperCase())
+        })
+    }
+}
+
+const asyncNumberSchema: StandardSchemaV1<number> = {
+    "~standard": {
+        version: 1,
+        vendor: "test",
+        validate: async (value) => {
+            const n = Number(value)
+            return Number.isNaN(n)
+                ? { issues: [{ message: "not a number" }] }
+                : { value: n }
+        }
+    }
+}
 
 describe("Argument.parse", () => {
     describe("when value is undefined", () => {
@@ -27,115 +72,52 @@ describe("Argument.parse", () => {
         })
     })
 
-    describe("when value is provided", () => {
-        it("should return raw value when no validate function exists", async () => {
+    describe("when value is provided without a schema", () => {
+        it("should return the raw string value", async () => {
             const argument = { name: "target" }
             const result = await Argument.parse(argument, "production")
             expect(result).toStrictEqual("production")
         })
+    })
 
-        it("should use validate return value as transformed result", async () => {
-            const argument = {
-                name: "port",
-                validate: (value: string) => parseInt(value, 10)
-            }
+    describe("when a schema is provided", () => {
+        it("should coerce the value", async () => {
+            const argument = { name: "port", schema: numberSchema }
             const result = await Argument.parse(argument, "8080")
             expect(result).toStrictEqual(8080)
         })
 
-        it("should treat 0 as a valid transform result", async () => {
-            const argument = {
-                name: "count",
-                validate: (value: string) => parseInt(value, 10)
-            }
+        it("should treat 0 as a valid coerced result", async () => {
+            const argument = { name: "count", schema: numberSchema }
             const result = await Argument.parse(argument, "0")
             expect(result).toStrictEqual(0)
         })
 
-        it("should treat empty string as a valid transform result", async () => {
-            const argument = {
-                name: "tag",
-                validate: (_value: string) => ""
-            }
-            const result = await Argument.parse(argument, "something")
-            expect(result).toStrictEqual("")
-        })
-    })
-
-    describe("validation", () => {
-        it("should throw when validate returns false", async () => {
-            const argument = {
-                name: "target",
-                validate: (value: string) => value !== "invalid"
-            }
-            await expect(
-                Argument.parse(argument, "invalid")
-            ).rejects.toThrowError(
-                `An argument "target" does not accept "invalid" as a value.`
+        it("should throw a CmdoreError with the issue message", async () => {
+            const argument = { name: "port", schema: numberSchema }
+            await expect(Argument.parse(argument, "abc")).rejects.toThrowError(
+                "not a number"
             )
         })
 
-        it("should not throw when validate returns true", async () => {
-            const argument = {
-                name: "target",
-                validate: (value: string) => value !== "invalid"
-            }
-            const result = await Argument.parse(argument, "production")
-            expect(result).toStrictEqual("production")
-        })
-
-        it("should not throw when validate returns void", async () => {
-            const argument = {
-                name: "target",
-                validate: () => undefined
-            }
-            const result = await Argument.parse(argument, "production")
-            expect(result).toStrictEqual("production")
-        })
-
-        it("should support async validate", async () => {
-            const argument = {
-                name: "target",
-                validate: async (value: string) => value !== "invalid"
-            }
-            await expect(
-                Argument.parse(argument, "invalid")
-            ).rejects.toThrowError(
-                `An argument "target" does not accept "invalid" as a value.`
+        it("should throw a CmdoreError instance", async () => {
+            const argument = { name: "target", schema: rejectSchema }
+            await expect(Argument.parse(argument, "x")).rejects.toBeInstanceOf(
+                CmdoreError
             )
         })
 
-        it("should support async validate returning transformed value", async () => {
-            const argument = {
-                name: "port",
-                validate: async (value: string) => parseInt(value, 10)
-            }
+        it("should await an async schema", async () => {
+            const argument = { name: "port", schema: asyncNumberSchema }
             const result = await Argument.parse(argument, "8080")
             expect(result).toStrictEqual(8080)
         })
 
-        it("should wrap thrown errors in CmdoreError", async () => {
-            const argument = {
-                name: "target",
-                validate: () => {
-                    throw new Error("boom")
-                }
-            }
-            await expect(
-                Argument.parse(argument, "production")
-            ).rejects.toThrowError(`boom`)
-        })
-
-        it("should not double-wrap CmdoreError", async () => {
-            const argument = {
-                name: "target",
-                validate: () => {
-                    throw new CmdoreError("custom error")
-                }
-            }
-            await expect(
-                Argument.parse(argument, "production")
-            ).rejects.toThrowError("custom error")
+        it("should reject via an async schema", async () => {
+            const argument = { name: "port", schema: asyncNumberSchema }
+            await expect(Argument.parse(argument, "abc")).rejects.toThrowError(
+                "not a number"
+            )
         })
     })
 })
@@ -148,10 +130,10 @@ describe("Argument.parseVariadic", () => {
         )
     })
 
-    it("should return undefined when values are empty and not required", async () => {
+    it("should return an empty array when values are empty and not required", async () => {
         const argument = { name: "files", variadic: true }
         const result = await Argument.parseVariadic(argument, [])
-        expect(result).toStrictEqual(undefined)
+        expect(result).toStrictEqual([])
     })
 
     it("should return defaultValue when values are empty", async () => {
@@ -164,7 +146,7 @@ describe("Argument.parseVariadic", () => {
         expect(result).toStrictEqual(["README.md"])
     })
 
-    it("should return raw values array when no validate function exists", async () => {
+    it("should return raw values array when no schema exists", async () => {
         const argument = { name: "files", variadic: true }
         const result = await Argument.parseVariadic(argument, [
             "a.ts",
@@ -174,29 +156,25 @@ describe("Argument.parseVariadic", () => {
         expect(result).toStrictEqual(["a.ts", "b.ts", "c.ts"])
     })
 
-    it("should use validate return value as transformed result", async () => {
+    it("should pass the values array to the schema", async () => {
         const argument = {
             name: "files",
             variadic: true,
-            validate: (...values: string[]) =>
-                values.map((v) => v.toUpperCase())
+            schema: upperSchema
         }
         const result = await Argument.parseVariadic(argument, ["a.ts", "b.ts"])
         expect(result).toStrictEqual(["A.TS", "B.TS"])
     })
 
-    it("should throw when validate returns false", async () => {
+    it("should throw a CmdoreError with the issue message", async () => {
         const argument = {
             name: "files",
             variadic: true,
-            validate: (...values: string[]) =>
-                values.every((v) => v.endsWith(".ts"))
+            schema: rejectSchema
         }
         await expect(
             Argument.parseVariadic(argument, ["a.ts", "b.js"])
-        ).rejects.toThrowError(
-            `An argument "files" does not accept "a.ts b.js" as a value.`
-        )
+        ).rejects.toThrowError("rejected")
     })
 })
 

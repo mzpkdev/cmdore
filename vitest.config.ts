@@ -10,6 +10,12 @@ export default defineConfig({
     },
     test: {
         globals: true,
-        environment: "node"
+        environment: "node",
+        typecheck: {
+            enabled: true,
+            include: ["**/*.test-d.ts"],
+            tsconfig: "tsconfig.typecheck.json",
+            ignoreSourceErrors: true
+        }
     }
 })

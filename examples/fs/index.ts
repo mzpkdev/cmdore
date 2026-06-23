@@ -1,4 +1,4 @@
-import { defineCommand, Program, terminal } from "cmdore"
+import { defineCommand, execute, terminal } from "cmdore"
 
 const copy = defineCommand({
     name: "copy",
@@ -48,4 +48,5 @@ const remove = defineCommand({
     }
 })
 
-export const program = new Program().register(copy).register(remove)
+export const program = (argv?: string[]): Promise<void> =>
+    execute([copy, remove], { argv })

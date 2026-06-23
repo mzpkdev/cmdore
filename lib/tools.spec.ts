@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { effect, mock, terminal } from "./tools"
 
 const mockAnswers: string[] = []
@@ -12,6 +12,20 @@ vi.mock("node:readline", () => ({
         close: () => {}
     })
 }))
+
+// Reset every mutable global back to its module default so a failing
+// assertion in one test can never leak state into the next. Guaranteed to
+// run via afterEach even when an expectation throws.
+const resetGlobalState = (): void => {
+    effect.enabled = true
+    terminal.colors = true
+    terminal.quiet = false
+    terminal.jsonMode = false
+    vi.restoreAllMocks()
+}
+
+beforeEach(resetGlobalState)
+afterEach(resetGlobalState)
 
 describe("effect", () => {
     it("should execute the callback when enabled", async () => {
@@ -30,7 +44,6 @@ describe("effect", () => {
             ran = true
         })
         expect(ran).toStrictEqual(false)
-        effect.enabled = true
     })
 
     it("should return the callback result when enabled", async () => {
@@ -43,7 +56,6 @@ describe("effect", () => {
         effect.enabled = false
         const result = await effect(() => 42)
         expect(result).toStrictEqual(undefined)
-        effect.enabled = true
     })
 
     it("should await async callbacks", async () => {
@@ -79,13 +91,6 @@ describe("mock", () => {
 })
 
 describe("terminal", () => {
-    afterEach(() => {
-        terminal.colors = true
-        terminal.quiet = false
-        terminal.jsonMode = false
-        vi.restoreAllMocks()
-    })
-
     describe("log", () => {
         it("should output via console.log", () => {
             terminal.colors = false
