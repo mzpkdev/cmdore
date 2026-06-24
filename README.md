@@ -84,8 +84,8 @@ npm install cmdore
 
 Define your commands and hand them to `execute` — the single entry point. There is no `Program` class to instantiate and
 nothing to `.register()`: `execute(commands, config)` takes a list of commands and a `config` (its `metadata` — program
-name, version, description — is required), parses `process.argv` (by default), dispatches to the matching command, and
-renders help/version itself.
+name and description, with version optional — is required), parses `process.argv` (by default), dispatches to the
+matching command, and renders help/version itself.
 
 > [!NOTE] **The raw value of an option is shaped by its `arity` — and the types say so.** With no `schema`, cmdore hands
 > you the unparsed value:
@@ -442,10 +442,10 @@ execute([ deploy ], {
 })
 ```
 
-> [!NOTE] `--verbose`, `--quiet`, `--json`, `--dry-run`, `--no-colors`, `-h`/`--help`, and `-v`/`--version` are built-in
-> flags handled by `execute` itself — you do not declare or call them. (Declaring an option named `verbose`, as above,
-> just lets an interceptor read the flag's value.) Help and version output is rendered by `execute`; there are no
-> `.help()` or `.version()` methods to call.
+> [!NOTE] `--verbose`, `--quiet`, `--json`, `--dry-run`, `--no-colors`, `-h`/`--help`, and — when `metadata.version` is
+> set — `-v`/`--version` are built-in flags handled by `execute` itself — you do not declare or call them. (Declaring an
+> option named `verbose`, as above, just lets an interceptor read the flag's value.) Help and version output is rendered
+> by `execute`; there are no `.help()` or `.version()` methods to call.
 
 ### How --quiet & --verbose works
 

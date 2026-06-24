@@ -315,6 +315,31 @@ describe("execute - --version flag", () => {
     })
 })
 
+describe("execute - metadata without version", () => {
+    const noVersion = { name: "cmdore", description: "A test CLI" }
+
+    it("rejects --version as an unknown flag (exit 2)", async () => {
+        await expect(
+            execute([], {
+                argv: ["--version"],
+                metadata: noVersion,
+                onError: "throw"
+            })
+        ).rejects.toMatchObject({ code: "cmdore.unknownFlag", exitCode: 2 })
+    })
+
+    it("omits the version line from command help", async () => {
+        const spy = vi.spyOn(console, "log").mockImplementation(() => {})
+        await execute([{ name: "build", description: "Build the project" }], {
+            argv: ["build", "--help"],
+            metadata: noVersion
+        })
+        const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
+        spy.mockRestore()
+        expect(output).not.toContain("--version")
+    })
+})
+
 describe("execute - --dry-run flag", () => {
     it("should disable effect execution", async () => {
         let effectCallbackRan = false

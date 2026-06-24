@@ -125,7 +125,9 @@ const helpCommand = (
         ["    --json", "enable JSON output"],
         ["    --dry-run", "simulate the command without executing anything"],
         ["    --no-colors", "disable colored output"],
-        ["-v, --version", "show version"],
+        ...(metadata.version != null
+            ? ([["-v, --version", "show version"]] as [string, string][])
+            : []),
         ["-h, --help", "show information for program or the command"]
     ]
     for (const [left, right] of builtin) {
@@ -142,8 +144,8 @@ const helpCommand = (
     log``
 }
 
-const version = (metadata: Metadata): void => {
-    log`v${metadata.version}`
+const version = (value: string): void => {
+    log`v${value}`
 }
 
 type Execute = {
@@ -207,9 +209,10 @@ const run = async (
         ? commands[0]
         : commands.find((command) => command.name === main)
     const options = command?.options ?? []
+    const hasVersion = metadata.version != null
     const schema = [
         { name: "help", arity: 0, alias: "h" },
-        { name: "version", arity: 0, alias: "v" },
+        ...(hasVersion ? [{ name: "version", arity: 0, alias: "v" }] : []),
         { name: "verbose", arity: 0 },
         { name: "quiet", arity: 0 },
         { name: "json", arity: 0 },
@@ -286,8 +289,8 @@ const run = async (
         }
         return
     }
-    if (flags.version) {
-        version(metadata)
+    if (flags.version && metadata.version != null) {
+        version(metadata.version)
         return
     }
     if (!commandless && command == null) {
