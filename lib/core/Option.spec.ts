@@ -176,6 +176,20 @@ describe("Option.parse", () => {
             expect(result).toStrictEqual(42)
         })
 
+        it("should pass a ctx with the name and the --name label", async () => {
+            let captured: { name: string; label: string } | undefined
+            const option = {
+                name: "line",
+                arity: 1,
+                coerce: (s: string, ctx: { name: string; label: string }) => {
+                    captured = ctx
+                    return Number(s)
+                }
+            }
+            await Option.parse(option, ["42"])
+            expect(captured).toStrictEqual({ name: "line", label: "--line" })
+        })
+
         it("should surface a thrown error as a CmdoreError with exitCode 2", async () => {
             const option = {
                 name: "line",

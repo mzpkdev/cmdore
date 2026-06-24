@@ -1,4 +1,5 @@
 import { CmdoreError } from "../errors"
+import type { CoerceContext } from "./Coerce"
 import type { StandardSchemaV1 } from "./StandardSchema"
 
 type Option = {
@@ -10,7 +11,7 @@ type Option = {
     required?: boolean
     defaultValue?: () => unknown
     /** Lightweight scalar coercion for arity-1 options; takes precedence over `schema` (mutually exclusive). */
-    coerce?: (raw: string) => unknown
+    coerce?: (raw: string, ctx: CoerceContext) => unknown
     schema?: StandardSchemaV1<unknown>
 }
 
@@ -44,7 +45,8 @@ namespace Option {
         const input = raw(option, values)
         if (option.coerce) {
             try {
-                return option.coerce(input as string)
+                const ctx = { name: option.name, label: `--${option.name}` }
+                return option.coerce(input as string, ctx)
             } catch (error) {
                 throw new CmdoreError(
                     error instanceof Error ? error.message : String(error),

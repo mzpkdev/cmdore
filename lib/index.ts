@@ -1,5 +1,6 @@
 export * from "./core/Argument"
 export { default as Argument } from "./core/Argument"
+export * from "./core/Coerce"
 export * from "./core/Command"
 export { default as Command } from "./core/Command"
 export * from "./core/execute"

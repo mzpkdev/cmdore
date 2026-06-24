@@ -250,16 +250,24 @@ cmdore infers `argv.<name>` from the schema's **output** type. The value handed 
 raw input: a `string` for an `arity: 1` option or a scalar argument, a `string[]` for a variadic (default-arity) option
 or a `variadic: true` argument.
 
-For the common scalar case, `coerce` is a lightweight shorthand: a plain `(raw: string) => T` that runs at parse time on
-an `arity: 1` option (or a non-variadic argument). Its return becomes the value **and** flows into the typed `argv`; if
-it throws, cmdore turns that into a usage error (a `CmdoreError` with `exitCode: 2`, exactly like a schema failure). Use
-it instead of `schema` when you just need to turn a string into a scalar — no Standard Schema required.
+For the common scalar case, `coerce` is a lightweight shorthand: a `(raw: string, ctx: CoerceContext) => T` that runs at
+parse time on an `arity: 1` option (or a non-variadic argument). Its return becomes the value **and** flows into the
+typed `argv`; if it throws, cmdore turns that into a usage error (a `CmdoreError` with `exitCode: 2`, exactly like a
+schema failure). Use it instead of `schema` when you just need to turn a string into a scalar — no Standard Schema
+required.
+
+The second argument is a `CoerceContext` — `{ name, label }` where `label` is the **canonical** display form: `--<name>`
+for an option, the bare `<name>` for a positional argument. Reach for it to build a message without hard-coding the
+flag, so one coercer is reusable across flags. (A 1-arg `coerce: (s) => …` stays valid; the second argument is
+optional.)
 
 ```typescript
+import type { CoerceContext } from "cmdore"
+
 // argv.line is typed `number | undefined`
-{ name: "line", arity: 1, coerce: (s) => {
+{ name: "line", arity: 1, coerce: (s, { label }: CoerceContext) => {
   const n = Number(s)
-  if (!Number.isInteger(n)) throw new Error(`--line must be an integer, got '${s}'`)
+  if (!Number.isInteger(n)) throw new Error(`${label} must be an integer, got '${s}'`)
   return n
 } }
 ```

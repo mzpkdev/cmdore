@@ -1,4 +1,5 @@
 import { CmdoreError } from "../errors"
+import type { CoerceContext } from "./Coerce"
 import type { StandardSchemaV1 } from "./StandardSchema"
 
 type Argument = {
@@ -8,7 +9,7 @@ type Argument = {
     variadic?: boolean
     defaultValue?: () => unknown
     /** Lightweight scalar coercion for non-variadic arguments; takes precedence over `schema` (mutually exclusive). */
-    coerce?: (raw: string) => unknown
+    coerce?: (raw: string, ctx: CoerceContext) => unknown
     schema?: StandardSchemaV1<unknown>
 }
 
@@ -45,7 +46,8 @@ namespace Argument {
         }
         if (argument.coerce) {
             try {
-                return argument.coerce(value)
+                const ctx = { name: argument.name, label: argument.name }
+                return argument.coerce(value, ctx)
             } catch (error) {
                 throw new CmdoreError(
                     error instanceof Error ? error.message : String(error),

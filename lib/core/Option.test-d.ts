@@ -1,4 +1,5 @@
 import { assertType, describe, expectTypeOf, it } from "vitest"
+import type { CoerceContext } from "./Coerce"
 import type { Argv } from "./Command"
 import { defineOption } from "./Option"
 import type { StandardSchemaV1 } from "./StandardSchema"
@@ -92,6 +93,18 @@ describe("Argv option inference", () => {
             name: "line",
             arity: 1,
             coerce: (s: string) => Number(s)
+        })
+        type T = Argv<readonly [typeof line], readonly []>
+        expectTypeOf<T["line"]>().toEqualTypeOf<number | undefined>()
+        expectTypeOf<T["line"]>().not.toEqualTypeOf<string | undefined>()
+    })
+
+    it("infers from a 2-arg `(raw, ctx)` coerce just like the 1-arg form (number | undefined)", () => {
+        const line = defineOption({
+            name: "line",
+            arity: 1,
+            coerce: (s: string, ctx: CoerceContext) =>
+                Number(s) + ctx.label.length
         })
         type T = Argv<readonly [typeof line], readonly []>
         expectTypeOf<T["line"]>().toEqualTypeOf<number | undefined>()

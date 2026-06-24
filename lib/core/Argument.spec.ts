@@ -131,6 +131,19 @@ describe("Argument.parse", () => {
             expect(result).toStrictEqual(42)
         })
 
+        it("should pass a ctx whose label is the bare positional name", async () => {
+            let captured: { name: string; label: string } | undefined
+            const argument = {
+                name: "line",
+                coerce: (s: string, ctx: { name: string; label: string }) => {
+                    captured = ctx
+                    return Number(s)
+                }
+            }
+            await Argument.parse(argument, "42")
+            expect(captured).toStrictEqual({ name: "line", label: "line" })
+        })
+
         it("should surface a thrown error as a CmdoreError with exitCode 2", async () => {
             const argument = {
                 name: "line",

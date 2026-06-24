@@ -1,4 +1,5 @@
 import { describe, expectTypeOf, it } from "vitest"
+import type { CoerceContext } from "./Coerce"
 import { defineCommand } from "./Command"
 import type { StandardSchemaV1 } from "./StandardSchema"
 
@@ -66,6 +67,23 @@ describe("defineCommand run(argv) inference", () => {
             name: "goto",
             options: [
                 { name: "line", arity: 1, coerce: (s: string) => Number(s) }
+            ],
+            run(argv) {
+                expectTypeOf(argv.line).toEqualTypeOf<number | undefined>()
+            }
+        })
+    })
+
+    it("infers argv from a 2-arg `(raw, ctx)` coerce (option -> number | undefined)", () => {
+        defineCommand({
+            name: "goto",
+            options: [
+                {
+                    name: "line",
+                    arity: 1,
+                    coerce: (s: string, ctx: CoerceContext) =>
+                        Number(s) + ctx.label.length
+                }
             ],
             run(argv) {
                 expectTypeOf(argv.line).toEqualTypeOf<number | undefined>()
