@@ -1189,3 +1189,246 @@ describe("execute - unknown flag rejection", () => {
         expect(received).toStrictEqual({ files: ["--bogus"] })
     })
 })
+
+describe("execute - commandless", () => {
+    it("should run a single command with no subcommand token", async () => {
+        let ran = false
+        await execute(
+            {
+                name: "greet",
+                run: () => {
+                    ran = true
+                }
+            },
+            { argv: [], metadata }
+        )
+        expect(ran).toStrictEqual(true)
+    })
+
+    it("should map the first operand to arguments[0] without a subcommand token", async () => {
+        let received: unknown = null
+        await execute(
+            {
+                name: "greet",
+                arguments: [{ name: "name" }],
+                run(argv: any) {
+                    received = argv
+                }
+            },
+            { argv: ["world"], metadata }
+        )
+        expect(received).toStrictEqual({ name: "world" })
+    })
+
+    it("should render and set exitCode when a required argument is missing", async () => {
+        const spy = vi.spyOn(console, "error").mockImplementation(() => {})
+        await expect(
+            execute(
+                {
+                    name: "greet",
+                    arguments: [{ name: "name", required: true }]
+                },
+                { argv: [], metadata }
+            )
+        ).resolves.toBeUndefined()
+        const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
+        const exitCode = process.exitCode
+        spy.mockRestore()
+        expect(output).toContain(`An argument "name" is required.`)
+        expect(exitCode).toStrictEqual(1)
+    })
+
+    it("should throw a CmdoreError for a missing required argument with onError: 'throw'", async () => {
+        await expect(
+            execute(
+                {
+                    name: "greet",
+                    arguments: [{ name: "name", required: true }]
+                },
+                { argv: [], metadata, onError: "throw" }
+            )
+        ).rejects.toBeInstanceOf(CmdoreError)
+    })
+
+    it("should collect all operands into a variadic argument", async () => {
+        let received: unknown = null
+        await execute(
+            {
+                name: "rm",
+                arguments: [{ name: "files", variadic: true }],
+                run(argv: any) {
+                    received = argv
+                }
+            },
+            { argv: ["a.ts", "b.ts", "c.ts"], metadata }
+        )
+        expect(received).toStrictEqual({ files: ["a.ts", "b.ts", "c.ts"] })
+    })
+
+    it("should not repeat the command name in the --help USAGE line", async () => {
+        const greetMetadata = {
+            name: "greet",
+            version: "1.0.0",
+            description: "A greeting CLI"
+        }
+        const spy = vi.spyOn(console, "log").mockImplementation(() => {})
+        await execute(
+            {
+                name: "greet",
+                description: "Print a friendly greeting",
+                arguments: [{ name: "name", required: true }],
+                options: [
+                    {
+                        name: "loud",
+                        alias: "l",
+                        arity: 0,
+                        description: "Shout the greeting"
+                    }
+                ]
+            },
+            { argv: ["--help"], metadata: greetMetadata }
+        )
+        const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
+        spy.mockRestore()
+        // The USAGE line reads "greet <name> [options]" — the program name
+        // appears once, never "greet greet <name> ...".
+        const usageLine = output
+            .split("\n")
+            .find((line) => line.trim().startsWith("greet <name>"))
+        expect(usageLine).toBeDefined()
+        expect(output).not.toContain("greet greet")
+        // The title reuses the command description but omits the command name.
+        expect(output).toContain("Print a friendly greeting")
+        expect(output).toContain("USAGE")
+    })
+
+    it("should support --json structured output", async () => {
+        const output: string[] = []
+        const spy = vi
+            .spyOn(process.stdout, "write")
+            .mockImplementation((...args: any[]) => {
+                output.push(String(args[0]))
+                return true
+            })
+        await execute(
+            {
+                name: "list",
+                run: () => {
+                    terminal.json({ id: 1 })
+                }
+            },
+            { argv: ["--json"], metadata }
+        )
+        spy.mockRestore()
+        terminal.jsonMode = false
+        const lines = output.map((line) => JSON.parse(line))
+        expect(lines).toContainEqual({ id: 1 })
+    })
+
+    it("should support --quiet by suppressing console.log during run", async () => {
+        const captured: string[] = []
+        const spy = vi
+            .spyOn(console, "log")
+            .mockImplementation((...args: any[]) => {
+                captured.push(String(args[0]))
+            })
+        await execute(
+            {
+                name: "greet",
+                run: () => {
+                    console.log("hello")
+                }
+            },
+            { argv: ["--quiet"], metadata }
+        )
+        spy.mockRestore()
+        expect(captured).not.toContain("hello")
+    })
+
+    it("should support --dry-run by skipping effect execution", async () => {
+        let effectCallbackRan = false
+        await execute(
+            {
+                name: "deploy",
+                run: () => {
+                    effect(() => {
+                        effectCallbackRan = true
+                    })
+                }
+            },
+            { argv: ["--dry-run"], metadata }
+        )
+        expect(effectCallbackRan).toStrictEqual(false)
+    })
+
+    it("should support --version", async () => {
+        const spy = vi.spyOn(console, "log").mockImplementation(() => {})
+        await execute(
+            { name: "greet", run: () => {} },
+            {
+                argv: ["--version"],
+                metadata
+            }
+        )
+        const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
+        spy.mockRestore()
+        expect(output).toContain("0.0.8")
+    })
+
+    it("should not treat the first operand as a subcommand (regression vs array form)", async () => {
+        // In commandless mode the operand "build" is data, not a command name:
+        // it maps straight to arguments[0] rather than being consumed as a
+        // dispatch token (which would leave the argument undefined).
+        let received: unknown = null
+        await execute(
+            {
+                name: "whatever",
+                arguments: [{ name: "subject" }],
+                run(argv: any) {
+                    received = argv
+                }
+            },
+            { argv: ["build"], metadata }
+        )
+        expect(received).toStrictEqual({ subject: "build" })
+    })
+
+    it("should still dispatch by name in the array form (regression)", async () => {
+        const ran: string[] = []
+        const commands: Command<any, any>[] = [
+            {
+                name: "build",
+                run: () => {
+                    ran.push("build")
+                }
+            },
+            {
+                name: "test",
+                run: () => {
+                    ran.push("test")
+                }
+            }
+        ]
+        // The array form consumes the first token as the subcommand name.
+        await execute(commands, { argv: ["build"], metadata })
+        await execute(commands, { argv: ["test"], metadata })
+        expect(ran).toStrictEqual(["build", "test"])
+    })
+
+    it("should still pass a positional operand after the subcommand in the array form (regression)", async () => {
+        let received: unknown = null
+        await execute(
+            [
+                {
+                    name: "deploy",
+                    arguments: [{ name: "target" }],
+                    run(argv: any) {
+                        received = argv
+                    }
+                }
+            ],
+            { argv: ["deploy", "production"], metadata }
+        )
+        expect(received).toStrictEqual({ target: "production" })
+    })
+})

@@ -5,9 +5,10 @@
         "composite": false,
         "incremental": false,
         "declaration": false,
-        "declarationMap": false
+        "declarationMap": false,
+        "skipLibCheck": true
     },
-    "include": ["lib/**/*.ts"],
+    "include": ["lib/**/*.ts", "lib/**/*.test-d.ts"],
     "exclude": [
         "node_modules",
         "lib/**/*.d.ts",

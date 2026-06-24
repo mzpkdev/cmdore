@@ -17,6 +17,7 @@
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
         "lib": ["es2024"],
+        "types": ["node"],
         "paths": {
             "@/*": ["./lib/*"],
             "cmdore": ["./lib/index.ts"]

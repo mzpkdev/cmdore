@@ -28,50 +28,51 @@
 <br />
 <br />
 
-Table of Contents
-------------------
+## Table of Contents
 
-* [Overview](#overview)
-  * [Why cmdore?](#why-cmdore)
-  * [Key Features](#key-features)
-* [Getting started](#getting-started)
-  * [How to install](#how-to-install)
-  * [How to use](#how-to-use)
-  * [How to validate & coerce](#how-to-validate--coerce)
-  * [Using with a schema library (Standard Schema)](#using-with-a-schema-library-standard-schema)
-  * [Interceptors](#interceptors)
-  * [How --quiet & --verbose works](#how---quiet----verbose-works)
-  * [How --dry-run works](#how---dry-run-works)
-  * [How --json works](#how---json-works)
+- [Overview](#overview)
+  - [Why cmdore?](#why-cmdore)
+  - [Key Features](#key-features)
+- [Getting started](#getting-started)
+  - [How to install](#how-to-install)
+  - [How to use](#how-to-use)
+  - [How to validate & coerce](#how-to-validate--coerce)
+  - [Using with a schema library (Standard Schema)](#using-with-a-schema-library-standard-schema)
+  - [Interceptors](#interceptors)
+  - [How --quiet & --verbose works](#how---quiet----verbose-works)
+  - [How --dry-run works](#how---dry-run-works)
+  - [How --json works](#how---json-works)
 
-Overview
---------
+## Overview
 
 ### Why cmdore?
 
-cmdore is a modern CLI framework that stands out with its perfect balance of simplicity, type safety, and flexibility. Unlike other CLI frameworks that are either too minimal or too opinionated, cmdore provides:
+cmdore is a modern CLI framework that stands out with its perfect balance of simplicity, type safety, and flexibility.
+Unlike other CLI frameworks that are either too minimal or too opinionated, cmdore provides:
 
-* **True TypeScript-first design**: Built from the ground up with TypeScript, offering complete type safety and excellent IDE integration
-* **Composable architecture**: Define commands and options in separate modules for maximum reusability
-* **Minimal dependencies**: Extremely lightweight with only two small dependencies
-* **Developer-friendly API**: Intuitive API that feels natural to TypeScript developers
-* **Progressive complexity**: Simple for basic use cases, but scales to complex CLI applications
+- **True TypeScript-first design**: Built from the ground up with TypeScript, offering complete type safety and
+  excellent IDE integration
+- **Composable architecture**: Define commands and options in separate modules for maximum reusability
+- **Minimal dependencies**: Extremely lightweight with only two small dependencies
+- **Developer-friendly API**: Intuitive API that feels natural to TypeScript developers
+- **Progressive complexity**: Simple for basic use cases, but scales to complex CLI applications
 
 ### Key Features
 
-* **Advanced Type Safety**: Enjoy full type inference for commands, options, and arguments with zero type assertions needed
-* **Modular Command Structure**: Create reusable command and option modules that can be shared across your application
-* **Smart Output Control**: Built-in support for quiet, verbose, JSON, and dry-run modes with minimal code
-* **Interactive Prompts**: Easily create interactive CLI experiences with built-in prompt utilities
-* **Automatic Help Generation**: Beautiful, automatically generated help text for all commands
-* **Powerful Validation**: Validate and transform command arguments with any [Standard Schema](https://standardschema.dev) (Zod, Valibot, ArkType, …) — no adapters
-* **Minimal Bundle Size**: Extremely small footprint with just two lightweight dependencies
-* **Interceptors**: Add cross-cutting concerns like authentication or logging across multiple commands
-* **Structured Error Handling**: Consistent error handling for validation and runtime errors
-* **Zero Configuration**: Works out of the box with sensible defaults, but fully customizable
+- **Advanced Type Safety**: Enjoy full type inference for commands, options, and arguments with zero type assertions
+  needed
+- **Modular Command Structure**: Create reusable command and option modules that can be shared across your application
+- **Smart Output Control**: Built-in support for quiet, verbose, JSON, and dry-run modes with minimal code
+- **Interactive Prompts**: Easily create interactive CLI experiences with built-in prompt utilities
+- **Automatic Help Generation**: Beautiful, automatically generated help text for all commands
+- **Powerful Validation**: Validate and transform command arguments with any
+  [Standard Schema](https://standardschema.dev) (Zod, Valibot, ArkType, …) — no adapters
+- **Minimal Bundle Size**: Extremely small footprint with just two lightweight dependencies
+- **Interceptors**: Add cross-cutting concerns like authentication or logging across multiple commands
+- **Structured Error Handling**: Consistent error handling for validation and runtime errors
+- **Zero Configuration**: Works out of the box with sensible defaults, but fully customizable
 
-Getting started
-----------------
+## Getting started
 
 ### How to install
 
@@ -81,14 +82,12 @@ npm install cmdore
 
 ### How to use
 
-Define your commands and hand them to `execute` — the single entry point. There is no
-`Program` class to instantiate and nothing to `.register()`: `execute(commands, config?)` takes a
-list of commands, parses `process.argv` (by default), dispatches to the matching command, and renders
-help/version itself.
+Define your commands and hand them to `execute` — the single entry point. There is no `Program` class to instantiate and
+nothing to `.register()`: `execute(commands, config?)` takes a list of commands, parses `process.argv` (by default),
+dispatches to the matching command, and renders help/version itself.
 
-> [!NOTE]
-> **The raw value of an option is shaped by its `arity` — and the types say so.** With no `schema`,
-> cmdore hands you the unparsed value:
+> [!NOTE] **The raw value of an option is shaped by its `arity` — and the types say so.** With no `schema`, cmdore hands
+> you the unparsed value:
 >
 > ```typescript
 > { name: "tags" }              // arity ∞ (default) → string[]   e.g. --tags a b → ["a", "b"]
@@ -96,27 +95,26 @@ help/version itself.
 > { name: "force", arity: 0 }   // arity 0           → boolean    present → true, absent → false
 > ```
 >
-> An `arity: 0` option is a boolean flag: its value is `true` when the flag is present and `false`
-> when it is absent — it is typed `boolean` (never `undefined`). Every other option that is **not**
-> `required` and has **no** `defaultValue` is typed with `| undefined`, because it may be omitted.
-> If a `defaultValue` is present (and no `schema`), the option takes that function's return type.
+> An `arity: 0` option is a boolean flag: its value is `true` when the flag is present and `false` when it is absent —
+> it is typed `boolean` (never `undefined`). Every other option that is **not** `required` and has **no** `defaultValue`
+> is typed with `| undefined`, because it may be omitted. If a `defaultValue` is present (and no `schema`), the option
+> takes that function's return type.
 >
-> To validate or coerce a value into any shape, attach a `schema` — any
-> [Standard Schema](https://standardschema.dev). cmdore infers `argv.<name>` from the schema's output
-> type:
+> To validate or coerce a value into any shape, attach a `schema` — any [Standard Schema](https://standardschema.dev).
+> cmdore infers `argv.<name>` from the schema's output type:
 >
 > ```typescript
 > { name: "port", arity: 1, schema: portNumberSchema }  // → number (whatever the schema outputs)
 > ```
 >
-> The value handed to the schema is the same arity-shaped raw value: a `string` for `arity: 1`, a
-> `string[]` for a variadic (default-arity) option. Arguments work the same way — a scalar argument
-> receives a `string`, a `variadic: true` argument receives a `string[]`.
+> The value handed to the schema is the same arity-shaped raw value: a `string` for `arity: 1`, a `string[]` for a
+> variadic (default-arity) option. Arguments work the same way — a scalar argument receives a `string`, a
+> `variadic: true` argument receives a `string[]`.
 >
-> Inline option objects (inside a `defineCommand({ options: [...] })`) are typed precisely on their
-> own — the `defineOption` wrapper is optional and only needed when you want to define a reusable,
-> named option. (It also rejects unknown fields, so a typo is a compile error.) See
-> [How to validate & coerce](#how-to-validate--coerce) for the full story.
+> Inline option objects (inside a `defineCommand({ options: [...] })`) are typed precisely on their own — the
+> `defineOption` wrapper is optional and only needed when you want to define a reusable, named option. (It also rejects
+> unknown fields, so a typo is a compile error.) See [How to validate & coerce](#how-to-validate--coerce) for the full
+> story.
 
 #### 🎮 Basic Command
 
@@ -144,8 +142,8 @@ execute([ startMission ])
 
 #### 🕹️ Helper Functions
 
-Configure your spacecraft systems before engaging the alien fleet. `defineCommand`, `defineOption`,
-and `defineArgument` are optional helpers that name a reusable definition and reject unknown fields:
+Configure your spacecraft systems before engaging the alien fleet. `defineCommand`, `defineOption`, and `defineArgument`
+are optional helpers that name a reusable definition and reject unknown fields:
 
 ```typescript
 import { execute, defineCommand, defineOption } from "cmdore"
@@ -182,18 +180,75 @@ const configureShipCommand = defineCommand({
 execute([ configureShipCommand ])
 ```
 
+### Commandless mode
+
+Some tools are a single command — they take arguments directly, with no subcommand to choose. `execute` covers this by
+overloading on what you hand it:
+
+- `execute(cli)` — pass a **single** command → a **commandless** CLI, invoked as `mytool <args> [options]` (no
+  subcommand token).
+- `execute([cli])` — pass an **array** → the existing **git-style** CLI, invoked as `mytool <command> <args> [options]`.
+
+In commandless mode the command's `name` is cosmetic — it is a label for help output and is never matched against
+`process.argv`. The very same command definition can be wired either way.
+
+```typescript
+import { execute, defineCommand, terminal } from "cmdore"
+
+const greet = defineCommand({
+  name: "greet",
+  description: "Print a friendly greeting",
+  arguments: [
+    { name: "name", required: true }
+  ],
+  options: [
+    { name: "loud", alias: "l", arity: 0, description: "Shout the greeting" }
+  ],
+  run: ({ name, loud }) => {
+    const greeting = `Hello, ${name}!`
+    terminal.log(loud ? greeting.toUpperCase() : greeting)
+  }
+})
+
+// Single command — the commandless form. Invoked as `greet <name> [options]`.
+execute(greet)
+```
+
+The generated help shows the program name once — there is no subcommand to render, so the usage line is
+`greet <name> [options]`, not a doubled `greet greet ...`:
+
+```
+greet - Print a friendly greeting
+
+USAGE
+  greet <name> [options]
+
+ARGUMENTS
+  <name>                                            (required)
+
+OPTIONS
+  -l, --loud                                        Shout the greeting
+      --quiet                                       suppress any output
+      --verbose                                     enable verbose output
+      --json                                        enable JSON output
+      --dry-run                                     simulate the command without executing anything
+      --no-colors                                   disable colored output
+  -v, --version                                     show version
+  -h, --help                                        show information for program or the command
+```
+
 ### How to validate & coerce
 
-Validation and coercion go through one field: `schema`. (There is no `validate` or `parse` field on an
-option or argument — `schema` is the single hook.) It accepts any value that implements the
-[Standard Schema](https://standardschema.dev) `~standard` contract. You can hand-roll one (it is only
-a few lines) or use any compliant library. A schema's `~standard.validate` returns either `{ value }`
-on success or `{ issues: [{ message }] }` on failure (the presence of `issues` is the failure signal);
-cmdore joins the issue messages and throws a `CmdoreError`. `validate` may be async — cmdore awaits it.
+Validation and coercion go through one field: `schema`. (There is no `validate` or `parse` field on an option or
+argument — `schema` is the single hook.) It accepts any value that implements the
+[Standard Schema](https://standardschema.dev) `~standard` contract. You can hand-roll one (it is only a few lines) or
+use any compliant library. A schema's `~standard.validate` returns either `{ value }` on success or
+`{ issues: [{ message }] }` on failure (the presence of `issues` is the failure signal); cmdore joins the issue messages
+and throws a `CmdoreError`. `validate` may be async — cmdore awaits it.
 
-cmdore infers `argv.<name>` from the schema's **output** type. The value handed to the schema is always
-the arity-shaped raw input: a `string` for an `arity: 1` option or a scalar argument, a `string[]` for a
-variadic (default-arity) option or a `variadic: true` argument.
+cmdore infers `argv.<name>` from the schema's **output** type. The value handed to the schema is always the arity-shaped
+raw input: a `string` for an `arity: 1` option or a scalar argument, a `string[]` for a variadic (default-arity) option
+or a `variadic: true` argument.
 
 Scan for alien vessels in the sector and validate their threat level:
 
@@ -259,10 +314,10 @@ const scanSectorCommand = defineCommand({
 
 ### Using with a schema library (Standard Schema)
 
-cmdore vendors the [Standard Schema](https://standardschema.dev) interface and carries **zero
-schema-library dependency** — you bring your own validator. `schema` accepts any Standard Schema, with
-no adapters and no plugins. Modern **Zod** (v3.24+), **Valibot** (v1.0+), and **ArkType** (v2.0+)
-implement the `~standard` contract natively, so you can pass a schema straight through:
+cmdore vendors the [Standard Schema](https://standardschema.dev) interface and carries **zero schema-library
+dependency** — you bring your own validator. `schema` accepts any Standard Schema, with no adapters and no plugins.
+Modern **Zod** (v3.24+), **Valibot** (v1.0+), and **ArkType** (v2.0+) implement the `~standard` contract natively, so
+you can pass a schema straight through:
 
 ```typescript
 import { z } from "zod"
@@ -304,19 +359,17 @@ const deployCommand = defineCommand({
 })
 ```
 
-cmdore infers `argv.<name>` from the schema's output type, calls the schema's `~standard.validate`
-(awaiting it if it is async), and throws a `CmdoreError` carrying the issue messages on failure.
+cmdore infers `argv.<name>` from the schema's output type, calls the schema's `~standard.validate` (awaiting it if it is
+async), and throws a `CmdoreError` carrying the issue messages on failure.
 
-> [!NOTE]
-> The value cmdore hands a schema is always a **string** (for `arity: 1` options and scalar arguments)
-> or a **`string[]`** (for variadic). Because the input is a string, use the coercing variants for
-> numbers: `z.coerce.number()` turns `"8080"` into `8080`, whereas a bare `z.number()` **rejects**
-> `"8080"` (it never sees a `number`).
+> [!NOTE] The value cmdore hands a schema is always a **string** (for `arity: 1` options and scalar arguments) or a
+> **`string[]`** (for variadic). Because the input is a string, use the coercing variants for numbers:
+> `z.coerce.number()` turns `"8080"` into `8080`, whereas a bare `z.number()` **rejects** `"8080"` (it never sees a
+> `number`).
 
-> [!NOTE]
-> Not every library is natively Standard Schema. **TypeBox is not** — a raw `Type.Number()` is not
-> `~standard` and will not type-check as a `schema`. Wrap it with
-> [`@sinclair/typemap`](https://github.com/sinclairzx81/typemap)'s `StandardSchema(...)` first:
+> [!NOTE] Not every library is natively Standard Schema. **TypeBox is not** — a raw `Type.Number()` is not `~standard`
+> and will not type-check as a `schema`. Wrap it with [`@sinclair/typemap`](https://github.com/sinclairzx81/typemap)'s
+> `StandardSchema(...)` first:
 >
 > ```typescript
 > import { Type } from "@sinclair/typebox"
@@ -328,11 +381,10 @@ cmdore infers `argv.<name>` from the schema's output type, calls the schema's `~
 
 ### Interceptors
 
-Interceptors run cross-cutting logic (auth, logging, setup) before a command's `run`. `intercept` is a
-standalone helper — `intercept(dependencies, handler)` — that returns an `Interceptor`. The
-`dependencies` are the options the interceptor reads; `argv` inside the handler is typed from them, and
-the interceptor only fires when every dependency is present on the dispatched command. Register them
-through `execute`'s `interceptors` config:
+Interceptors run cross-cutting logic (auth, logging, setup) before a command's `run`. `intercept` is a standalone helper
+— `intercept(dependencies, handler)` — that returns an `Interceptor`. The `dependencies` are the options the interceptor
+reads; `argv` inside the handler is typed from them, and the interceptor only fires when every dependency is present on
+the dispatched command. Register them through `execute`'s `interceptors` config:
 
 ```typescript
 import { execute, intercept, defineCommand, defineOption } from "cmdore"
@@ -359,11 +411,10 @@ execute([ deploy ], {
 })
 ```
 
-> [!NOTE]
-> `--verbose`, `--quiet`, `--json`, `--dry-run`, `--no-colors`, `-h`/`--help`, and `-v`/`--version` are
-> built-in flags handled by `execute` itself — you do not declare or call them. (Declaring an option
-> named `verbose`, as above, just lets an interceptor read the flag's value.) Help and version output is
-> rendered by `execute`; there are no `.help()` or `.version()` methods to call.
+> [!NOTE] `--verbose`, `--quiet`, `--json`, `--dry-run`, `--no-colors`, `-h`/`--help`, and `-v`/`--version` are built-in
+> flags handled by `execute` itself — you do not declare or call them. (Declaring an option named `verbose`, as above,
+> just lets an interceptor read the flag's value.) Help and version output is rendered by `execute`; there are no
+> `.help()` or `.version()` methods to call.
 
 ### How --quiet & --verbose works
 

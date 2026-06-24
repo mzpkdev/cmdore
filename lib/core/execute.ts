@@ -50,10 +50,15 @@ const help = (
     log``
 }
 
-const helpCommand = (command: Command, metadata: Metadata): void => {
+const helpCommand = (
+    command: Command,
+    metadata: Metadata,
+    opts?: { commandless?: boolean }
+): void => {
     const { name } = metadata
+    const title = opts?.commandless ? name : `${name} ${command.name}`
     log``
-    log`${bold(`${name} ${command.name}`)} - ${command.description ?? ""}`
+    log`${bold(title)} - ${command.description ?? ""}`
     log``
     log`${bold(dim`USAGE`)}`
     const argsSummary = (command.arguments ?? [])
@@ -62,9 +67,11 @@ const helpCommand = (command: Command, metadata: Metadata): void => {
             return arg.required ? `<${label}>` : `[${label}]`
         })
         .join(" ")
-    const usageParts = [name, command.name, argsSummary, "[options]"].filter(
-        Boolean
-    )
+    const usageParts = (
+        opts?.commandless
+            ? [name, argsSummary, "[options]"]
+            : [name, command.name, argsSummary, "[options]"]
+    ).filter(Boolean)
     log`  ${usageParts.join(" ")}`
     log``
     if (command.arguments?.length) {
@@ -126,7 +133,8 @@ const helpCommand = (command: Command, metadata: Metadata): void => {
         log``
         log`${bold(dim`EXAMPLES`)}`
         for (const example of command.examples ?? []) {
-            log`  $ ${name} ${command.name} ${dim(example)}`
+            const prefix = opts?.commandless ? name : `${name} ${command.name}`
+            log`  $ ${prefix} ${dim(example)}`
         }
     }
     log``
@@ -136,8 +144,16 @@ const version = (metadata: Metadata): void => {
     log`v${metadata.version}`
 }
 
-export const execute = async (
-    commands: readonly Command<any, any>[],
+type Execute = {
+    (command: Command<any, any>, config?: Configuration): Promise<void>
+    (
+        commands: readonly Command<any, any>[],
+        config?: Configuration
+    ): Promise<void>
+}
+
+export const execute: Execute = async (
+    input: Command<any, any> | readonly Command<any, any>[],
     config?: Configuration
 ): Promise<void> => {
     const {
@@ -146,8 +162,10 @@ export const execute = async (
         interceptors = [],
         onError = "exit"
     } = config ?? {}
+    const commandless = !Array.isArray(input)
+    const commands: readonly Command<any, any>[] = commandless ? [input] : input
     try {
-        await run(commands, argv, metadata, interceptors)
+        await run(commands, argv, metadata, interceptors, commandless)
     } catch (error) {
         if (onError === "throw") {
             throw error
@@ -168,7 +186,8 @@ const run = async (
     commands: readonly Command<any, any>[],
     argv: string[],
     metadata: Metadata,
-    interceptors: readonly Interceptor[]
+    interceptors: readonly Interceptor[],
+    commandless: boolean
 ): Promise<void> => {
     for (const command of commands) {
         const args = command.arguments ?? []
@@ -182,7 +201,9 @@ const run = async (
         }
     }
     const [main] = argv
-    const command = commands.find((command) => command.name === main)
+    const command = commandless
+        ? commands[0]
+        : commands.find((command) => command.name === main)
     const options = command?.options ?? []
     const schema = [
         { name: "help", arity: 0, alias: "h" },
@@ -253,11 +274,11 @@ const run = async (
         strict: true,
         override: false
     })
-    if (flags.help || main == null) {
+    if (flags.help || (!commandless && main == null)) {
         if (command == null) {
             help(commands, metadata)
         } else {
-            helpCommand(command, metadata)
+            helpCommand(command, metadata, { commandless })
         }
         return
     }
@@ -265,10 +286,16 @@ const run = async (
         version(metadata)
         return
     }
-    if (command == null) {
+    if (!commandless && command == null) {
         throw new CmdoreError(`A command "${main}" does not exist.`, {
             code: "cmdore.unknownCommand"
         })
+    }
+    // Invariant: by this point `command` is always resolved. In commandless mode
+    // it is `commands[0]`; otherwise the guard above has thrown for a missing
+    // command. This narrows the `| undefined` that `.find()` leaks into the type.
+    if (command == null) {
+        return
     }
     const previousEffectEnabled = effect.enabled
     const previousColors = terminal.colors
@@ -300,7 +327,7 @@ const run = async (
             argv2[option.name] = await Option.parse(option, values)
         }
         const args = command.arguments ?? []
-        const positionalOperands = operands.slice(1)
+        const positionalOperands = commandless ? operands : operands.slice(1)
         for (let i = 0; i < args.length; i++) {
             const argument = args[i]
             if (argument.variadic) {
