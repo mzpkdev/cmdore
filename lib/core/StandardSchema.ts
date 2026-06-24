@@ -52,4 +52,4 @@ export namespace StandardSchemaV1 {
     >["output"]
 }
 
-export default StandardSchemaV1
+export type { StandardSchemaV1 as default }

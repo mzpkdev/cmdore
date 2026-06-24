@@ -95,7 +95,7 @@ const helpCommand = (
         log``
     }
     log`${bold(dim`OPTIONS`)}`
-    const man: string[][] = (command.options ?? []).map((option: Option) => {
+    const man: [string, string][] = (command.options ?? []).map((option: Option): [string, string] => {
         const flags = option.alias
             ? `-${option.alias}, --${option.name}`
             : `--${option.name}`.padStart(4, " ")
@@ -117,7 +117,7 @@ const helpCommand = (
     for (const [left, right] of man) {
         log`  ${left.padEnd(48, " ")}  ${right}`
     }
-    const builtin = [
+    const builtin: [string, string][] = [
         ["    --quiet", "suppress any output"],
         ["    --verbose", "enable verbose output"],
         ["    --json", "enable JSON output"],

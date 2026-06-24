@@ -76,4 +76,4 @@ export const defineCommand = <
     command: Command<TOptions, TArguments>
 ): Command<TOptions, TArguments> => command
 
-export default Command
+export type { Command as default }
