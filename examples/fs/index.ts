@@ -49,4 +49,11 @@ const remove = defineCommand({
 })
 
 export const program = (argv?: string[]): Promise<void> =>
-    execute([copy, remove], { argv })
+    execute([copy, remove], {
+        argv,
+        metadata: {
+            name: "fs",
+            version: "0.0.0",
+            description: "Copy and remove files"
+        }
+    })

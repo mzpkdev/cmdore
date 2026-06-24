@@ -57,6 +57,11 @@ const status = defineCommand({
 export const program = (argv?: string[]): Promise<void> =>
     execute([push, status], {
         argv,
+        metadata: {
+            name: "git",
+            version: "0.0.0",
+            description: "A tiny git-style CLI"
+        },
         interceptors: [
             intercept([tokenOption], () => {
                 terminal.log("Authenticating...")

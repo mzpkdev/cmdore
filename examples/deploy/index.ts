@@ -63,4 +63,11 @@ const deploy = defineCommand({
 })
 
 export const program = (argv?: string[]): Promise<void> =>
-    execute([deploy], { argv })
+    execute([deploy], {
+        argv,
+        metadata: {
+            name: "deploy",
+            version: "0.0.0",
+            description: "Deploy a service to an environment"
+        }
+    })

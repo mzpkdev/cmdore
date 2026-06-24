@@ -43,4 +43,11 @@ const list = defineCommand({
 })
 
 export const program = (argv?: string[]): Promise<void> =>
-    execute([list], { argv })
+    execute([list], {
+        argv,
+        metadata: {
+            name: "api",
+            version: "0.0.0",
+            description: "Query a JSON API"
+        }
+    })

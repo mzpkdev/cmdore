@@ -24,4 +24,10 @@ const make = defineCommand({
     }
 })
 
-execute([make])
+execute([make], {
+    metadata: {
+        name: "brew",
+        version: "0.0.0",
+        description: "Brew a coffee"
+    }
+})

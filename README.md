@@ -83,8 +83,9 @@ npm install cmdore
 ### How to use
 
 Define your commands and hand them to `execute` — the single entry point. There is no `Program` class to instantiate and
-nothing to `.register()`: `execute(commands, config?)` takes a list of commands, parses `process.argv` (by default),
-dispatches to the matching command, and renders help/version itself.
+nothing to `.register()`: `execute(commands, config)` takes a list of commands and a `config` (its `metadata` — program
+name, version, description — is required), parses `process.argv` (by default), dispatches to the matching command, and
+renders help/version itself.
 
 > [!NOTE] **The raw value of an option is shaped by its `arity` — and the types say so.** With no `schema`, cmdore hands
 > you the unparsed value:
@@ -137,7 +138,10 @@ const startMission = defineCommand({
 })
 
 // `execute` parses process.argv by default; pass `{ argv }` to override.
-execute([ startMission ])
+// `metadata` is required — it names the program in help/version output.
+execute([ startMission ], {
+  metadata: { name: "space-defender", version: "1.0.0", description: "Defend Earth from the alien invasion" }
+})
 ```
 
 #### 🕹️ Helper Functions
@@ -177,7 +181,9 @@ const configureShipCommand = defineCommand({
   }
 })
 
-execute([ configureShipCommand ])
+execute([ configureShipCommand ], {
+  metadata: { name: "space-defender", version: "1.0.0", description: "Defend Earth from the alien invasion" }
+})
 ```
 
 ### Commandless mode
@@ -211,7 +217,9 @@ const greet = defineCommand({
 })
 
 // Single command — the commandless form. Invoked as `greet <name> [options]`.
-execute(greet)
+execute(greet, {
+  metadata: { name: "greet", version: "1.0.0", description: "Print a friendly greeting" }
+})
 ```
 
 The generated help shows the program name once — there is no subcommand to render, so the usage line is
@@ -422,6 +430,7 @@ const deploy = defineCommand({
 })
 
 execute([ deploy ], {
+  metadata: { name: "deploy", version: "1.0.0", description: "Deploy a service" },
   interceptors: [
     intercept([ verbose ], (argv) => {
       // argv.verbose is typed `boolean` (arity 0)

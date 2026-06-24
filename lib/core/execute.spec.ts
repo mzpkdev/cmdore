@@ -755,8 +755,10 @@ describe("execute - interceptors", () => {
 })
 
 describe("execute - configuration", () => {
-    it("should not throw with no configuration", async () => {
-        await expect(execute([], { argv: [] })).resolves.toBeUndefined()
+    it("should not throw with a minimal configuration", async () => {
+        await expect(
+            execute([], { argv: [], metadata })
+        ).resolves.toBeUndefined()
     })
 })
 

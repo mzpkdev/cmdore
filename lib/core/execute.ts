@@ -1,7 +1,7 @@
 import argvex from "argvex"
 import log, { bold, dim } from "logtint"
 import { CmdoreError } from "../errors"
-import { findMetadata, type Metadata } from "../metadata"
+import type { Metadata } from "../metadata"
 import { effect, mock, terminal } from "../tools"
 
 import Argument from "./Argument"
@@ -24,7 +24,7 @@ export const intercept = <const TOptions extends readonly Option[]>(
 
 export type Configuration = {
     argv?: string[]
-    metadata?: Metadata
+    metadata: Metadata
     interceptors?: Interceptor[]
     onError?: "exit" | "throw"
 }
@@ -147,23 +147,23 @@ const version = (metadata: Metadata): void => {
 }
 
 type Execute = {
-    (command: Command<any, any>, config?: Configuration): Promise<void>
+    (command: Command<any, any>, config: Configuration): Promise<void>
     (
         commands: readonly Command<any, any>[],
-        config?: Configuration
+        config: Configuration
     ): Promise<void>
 }
 
 export const execute: Execute = async (
     input: Command<any, any> | readonly Command<any, any>[],
-    config?: Configuration
+    config: Configuration
 ): Promise<void> => {
     const {
         argv = process.argv.slice(2),
-        metadata = findMetadata(),
+        metadata,
         interceptors = [],
         onError = "exit"
-    } = config ?? {}
+    } = config
     const commandless = !Array.isArray(input)
     const commands: readonly Command<any, any>[] = commandless ? [input] : input
     try {
