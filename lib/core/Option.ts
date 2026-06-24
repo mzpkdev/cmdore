@@ -9,6 +9,8 @@ type Option = {
     arity?: number
     required?: boolean
     defaultValue?: () => unknown
+    /** Lightweight scalar coercion for arity-1 options; takes precedence over `schema` (mutually exclusive). */
+    coerce?: (raw: string) => unknown
     schema?: StandardSchemaV1<unknown>
 }
 
@@ -40,6 +42,16 @@ namespace Option {
             return option.arity === 0 ? false : undefined
         }
         const input = raw(option, values)
+        if (option.coerce) {
+            try {
+                return option.coerce(input as string)
+            } catch (error) {
+                throw new CmdoreError(
+                    error instanceof Error ? error.message : String(error),
+                    { exitCode: 2 }
+                )
+            }
+        }
         if (option.schema == null) {
             return input
         }

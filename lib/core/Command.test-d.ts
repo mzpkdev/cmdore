@@ -61,6 +61,18 @@ describe("defineCommand run(argv) inference", () => {
         })
     })
 
+    it("infers argv from a `coerce` shorthand (option -> number | undefined)", () => {
+        defineCommand({
+            name: "goto",
+            options: [
+                { name: "line", arity: 1, coerce: (s: string) => Number(s) }
+            ],
+            run(argv) {
+                expectTypeOf(argv.line).toEqualTypeOf<number | undefined>()
+            }
+        })
+    })
+
     it("keeps `| undefined` on non-required schema members in argv", () => {
         defineCommand({
             name: "query",

@@ -3,12 +3,14 @@ import type Option from "./Option"
 import type { StandardSchemaV1 } from "./StandardSchema"
 
 type Value<TElement, TDefault> = TElement extends {
-    schema: StandardSchemaV1
+    coerce: (...args: any[]) => infer R
 }
-    ? StandardSchemaV1.InferOutput<TElement["schema"]>
-    : TElement extends { defaultValue: () => infer TDefaultValue }
-      ? TDefaultValue
-      : TDefault
+    ? R
+    : TElement extends { schema: StandardSchemaV1 }
+      ? StandardSchemaV1.InferOutput<TElement["schema"]>
+      : TElement extends { defaultValue: () => infer TDefaultValue }
+        ? TDefaultValue
+        : TDefault
 
 type Raw<TElement> = TElement extends { arity: 0 }
     ? boolean

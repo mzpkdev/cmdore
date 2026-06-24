@@ -250,6 +250,20 @@ cmdore infers `argv.<name>` from the schema's **output** type. The value handed 
 raw input: a `string` for an `arity: 1` option or a scalar argument, a `string[]` for a variadic (default-arity) option
 or a `variadic: true` argument.
 
+For the common scalar case, `coerce` is a lightweight shorthand: a plain `(raw: string) => T` that runs at parse time on
+an `arity: 1` option (or a non-variadic argument). Its return becomes the value **and** flows into the typed `argv`; if
+it throws, cmdore turns that into a usage error (a `CmdoreError` with `exitCode: 2`, exactly like a schema failure). Use
+it instead of `schema` when you just need to turn a string into a scalar — no Standard Schema required.
+
+```typescript
+// argv.line is typed `number | undefined`
+{ name: "line", arity: 1, coerce: (s) => {
+  const n = Number(s)
+  if (!Number.isInteger(n)) throw new Error(`--line must be an integer, got '${s}'`)
+  return n
+} }
+```
+
 Scan for alien vessels in the sector and validate their threat level:
 
 ```typescript

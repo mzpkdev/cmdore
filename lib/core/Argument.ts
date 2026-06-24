@@ -7,6 +7,8 @@ type Argument = {
     required?: boolean
     variadic?: boolean
     defaultValue?: () => unknown
+    /** Lightweight scalar coercion for non-variadic arguments; takes precedence over `schema` (mutually exclusive). */
+    coerce?: (raw: string) => unknown
     schema?: StandardSchemaV1<unknown>
 }
 
@@ -40,6 +42,16 @@ namespace Argument {
                 )
             }
             return argument.defaultValue?.()
+        }
+        if (argument.coerce) {
+            try {
+                return argument.coerce(value)
+            } catch (error) {
+                throw new CmdoreError(
+                    error instanceof Error ? error.message : String(error),
+                    { exitCode: 2 }
+                )
+            }
         }
         return validate(argument, value)
     }

@@ -69,6 +69,27 @@ describe("Argv argument inference", () => {
         type T = Argv<readonly [], readonly [typeof count]>
         expectTypeOf<T["count"]>().toEqualTypeOf<number | undefined>()
     })
+
+    it("lets `coerce` set the type, keeping `| undefined` when not required", () => {
+        const line = defineArgument({
+            name: "line",
+            coerce: (s: string) => Number(s)
+        })
+        type T = Argv<readonly [], readonly [typeof line]>
+        expectTypeOf<T["line"]>().toEqualTypeOf<number | undefined>()
+        expectTypeOf<T["line"]>().not.toEqualTypeOf<string | undefined>()
+    })
+
+    it("drops `| undefined` on a required `coerce` argument", () => {
+        const line = defineArgument({
+            name: "line",
+            required: true,
+            coerce: (s: string) => Number(s)
+        })
+        type T = Argv<readonly [], readonly [typeof line]>
+        expectTypeOf<T["line"]>().toEqualTypeOf<number>()
+        expectTypeOf<T["line"]>().not.toEqualTypeOf<number | undefined>()
+    })
 })
 
 describe("defineArgument excess-key guard", () => {
@@ -79,6 +100,7 @@ describe("defineArgument excess-key guard", () => {
             required: true,
             variadic: false,
             defaultValue: () => 1,
+            coerce: (s: string) => Number(s),
             schema: numberSchema
         })
         assertType<string>(argument.name)

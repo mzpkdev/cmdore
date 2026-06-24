@@ -164,6 +164,50 @@ describe("Option.parse", () => {
             )
         })
     })
+
+    describe("when a coerce is provided", () => {
+        it("should coerce the single value and propagate it", async () => {
+            const option = {
+                name: "line",
+                arity: 1,
+                coerce: (s: string) => Number(s)
+            }
+            const result = await Option.parse(option, ["42"])
+            expect(result).toStrictEqual(42)
+        })
+
+        it("should surface a thrown error as a CmdoreError with exitCode 2", async () => {
+            const option = {
+                name: "line",
+                arity: 1,
+                coerce: (s: string) => {
+                    const n = Number(s)
+                    if (!Number.isInteger(n)) {
+                        throw new Error(`--line must be an integer, got '${s}'`)
+                    }
+                    return n
+                }
+            }
+            await expect(Option.parse(option, ["x"])).rejects.toBeInstanceOf(
+                CmdoreError
+            )
+            await expect(Option.parse(option, ["x"])).rejects.toMatchObject({
+                message: "--line must be an integer, got 'x'",
+                exitCode: 2
+            })
+        })
+
+        it("should take precedence over schema", async () => {
+            const option = {
+                name: "line",
+                arity: 1,
+                coerce: (s: string) => Number(s),
+                schema: rejectSchema
+            }
+            const result = await Option.parse(option, ["42"])
+            expect(result).toStrictEqual(42)
+        })
+    })
 })
 
 describe("defineOption", () => {

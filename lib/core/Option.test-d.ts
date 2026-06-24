@@ -87,6 +87,41 @@ describe("Argv option inference", () => {
         expectTypeOf<T["limit"]>().toEqualTypeOf<number | undefined>()
     })
 
+    it("lets `coerce` set the type, keeping `| undefined` when not required (number | undefined)", () => {
+        const line = defineOption({
+            name: "line",
+            arity: 1,
+            coerce: (s: string) => Number(s)
+        })
+        type T = Argv<readonly [typeof line], readonly []>
+        expectTypeOf<T["line"]>().toEqualTypeOf<number | undefined>()
+        expectTypeOf<T["line"]>().not.toEqualTypeOf<string | undefined>()
+    })
+
+    it("drops `| undefined` on a required `coerce` option", () => {
+        const line = defineOption({
+            name: "line",
+            arity: 1,
+            required: true,
+            coerce: (s: string) => Number(s)
+        })
+        type T = Argv<readonly [typeof line], readonly []>
+        expectTypeOf<T["line"]>().toEqualTypeOf<number>()
+        expectTypeOf<T["line"]>().not.toEqualTypeOf<number | undefined>()
+    })
+
+    it("lets `coerce` win over `schema` (precedence)", () => {
+        const line = defineOption({
+            name: "line",
+            arity: 1,
+            required: true,
+            coerce: (s: string) => s.length > 0,
+            schema: numberSchema
+        })
+        type T = Argv<readonly [typeof line], readonly []>
+        expectTypeOf<T["line"]>().toEqualTypeOf<boolean>()
+    })
+
     it("applies schema override to arity 0 (present, so no `| undefined`)", () => {
         const verbosity = defineOption({
             name: "verbosity",
@@ -109,6 +144,7 @@ describe("defineOption excess-key guard", () => {
             arity: 1,
             required: true,
             defaultValue: () => 1,
+            coerce: (s: string) => Number(s),
             schema: numberSchema
         })
         assertType<string>(option.name)

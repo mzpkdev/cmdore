@@ -120,6 +120,47 @@ describe("Argument.parse", () => {
             )
         })
     })
+
+    describe("when a coerce is provided", () => {
+        it("should coerce the value and propagate it", async () => {
+            const argument = {
+                name: "line",
+                coerce: (s: string) => Number(s)
+            }
+            const result = await Argument.parse(argument, "42")
+            expect(result).toStrictEqual(42)
+        })
+
+        it("should surface a thrown error as a CmdoreError with exitCode 2", async () => {
+            const argument = {
+                name: "line",
+                coerce: (s: string) => {
+                    const n = Number(s)
+                    if (!Number.isInteger(n)) {
+                        throw new Error(`--line must be an integer, got '${s}'`)
+                    }
+                    return n
+                }
+            }
+            await expect(Argument.parse(argument, "x")).rejects.toBeInstanceOf(
+                CmdoreError
+            )
+            await expect(Argument.parse(argument, "x")).rejects.toMatchObject({
+                message: "--line must be an integer, got 'x'",
+                exitCode: 2
+            })
+        })
+
+        it("should take precedence over schema", async () => {
+            const argument = {
+                name: "line",
+                coerce: (s: string) => Number(s),
+                schema: rejectSchema
+            }
+            const result = await Argument.parse(argument, "42")
+            expect(result).toStrictEqual(42)
+        })
+    })
 })
 
 describe("Argument.parseVariadic", () => {
