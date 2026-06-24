@@ -35,7 +35,7 @@ const help = (
 ): void => {
     const { name, description } = metadata
     log``
-    log`${bold(name)} - ${description}`
+    log`${bold(name)}${description ? ` - ${description}` : ""}`
     log``
     log`${bold(dim`USAGE`)}`
     log`  ${name} <command> [options]`
