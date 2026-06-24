@@ -63,7 +63,7 @@ describe("execute - command dispatch", () => {
         const exitCode = process.exitCode
         spy.mockRestore()
         expect(output).toContain(`A command "nonexistent" does not exist.`)
-        expect(exitCode).toStrictEqual(1)
+        expect(exitCode).toStrictEqual(2)
     })
 
     it("should tag the unknown-command error with code cmdore.unknownCommand", async () => {
@@ -654,7 +654,7 @@ describe("execute - option parsing", () => {
         const exitCode = process.exitCode
         spy.mockRestore()
         expect(output).toContain(`An option "env" is required.`)
-        expect(exitCode).toStrictEqual(1)
+        expect(exitCode).toStrictEqual(2)
     })
 
     it("should use schema result in argv", async () => {
@@ -703,7 +703,7 @@ describe("execute - option parsing", () => {
         const exitCode = process.exitCode
         spy.mockRestore()
         expect(output).toContain("not a number")
-        expect(exitCode).toStrictEqual(1)
+        expect(exitCode).toStrictEqual(2)
     })
 })
 
@@ -815,7 +815,7 @@ describe("execute - positional arguments", () => {
         const exitCode = process.exitCode
         spy.mockRestore()
         expect(output).toContain(`An argument "target" is required.`)
-        expect(exitCode).toStrictEqual(1)
+        expect(exitCode).toStrictEqual(2)
     })
 
     it("should use defaultValue when positional argument is absent", async () => {
@@ -1106,7 +1106,7 @@ describe("execute - unknown flag rejection", () => {
         const exitCode = process.exitCode
         spy.mockRestore()
         expect(output).toContain(`An option "--bogus" is unknown.`)
-        expect(exitCode).toStrictEqual(1)
+        expect(exitCode).toStrictEqual(2)
     })
 
     it("should tag the unknown-flag error with code cmdore.unknownFlag", async () => {
@@ -1235,7 +1235,7 @@ describe("execute - commandless", () => {
         const exitCode = process.exitCode
         spy.mockRestore()
         expect(output).toContain(`An argument "name" is required.`)
-        expect(exitCode).toStrictEqual(1)
+        expect(exitCode).toStrictEqual(2)
     })
 
     it("should throw a CmdoreError for a missing required argument with onError: 'throw'", async () => {

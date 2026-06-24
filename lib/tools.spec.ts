@@ -17,7 +17,7 @@ vi.mock("node:readline", () => ({
 // assertion in one test can never leak state into the next. Guaranteed to
 // run via afterEach even when an expectation throws.
 const resetGlobalState = (): void => {
-    effect.enabled = true
+    effect.reset()
     terminal.colors = true
     terminal.quiet = false
     terminal.jsonMode = false
@@ -64,6 +64,121 @@ describe("effect", () => {
             return await Promise.resolve("async-value")
         })
         expect(result).toStrictEqual("async-value")
+    })
+
+    describe("fn", () => {
+        it("should call real, return its value, and record the args", () => {
+            let calledWith: [string, number] | undefined
+            const write = effect.fn((file: string, size: number) => {
+                calledWith = [file, size]
+                return `wrote ${size} to ${file}`
+            })
+
+            const result = write("out.txt", 7)
+
+            expect(result).toStrictEqual("wrote 7 to out.txt")
+            expect(calledWith).toStrictEqual(["out.txt", 7])
+            expect(effect.log).toStrictEqual([
+                { wrapper: write, label: "anonymous", args: ["out.txt", 7] }
+            ])
+        })
+
+        it("should use real.name as the default label", () => {
+            const named = (value: number) => value
+            const write = effect.fn(named)
+            write(1)
+            expect(effect.log[0]?.label).toStrictEqual("named")
+        })
+
+        it("should record an explicit label without using it as the key", () => {
+            const write = effect.fn(() => "ok", "write-config")
+            write()
+            expect(effect.log[0]?.label).toStrictEqual("write-config")
+            expect(effect.log[0]?.wrapper).toStrictEqual(write)
+        })
+
+        it("should skip real and return undefined on dry-run", () => {
+            effect.enabled = false
+            let ran = false
+            const write = effect.fn(() => {
+                ran = true
+                return "wrote"
+            })
+
+            const result = write()
+
+            expect(ran).toStrictEqual(false)
+            expect(result).toStrictEqual(undefined)
+            expect(effect.log).toHaveLength(1)
+        })
+
+        it("should await an async real when enabled", async () => {
+            const write = effect.fn(async (value: string) =>
+                Promise.resolve(`async-${value}`)
+            )
+            await expect(write("x")).resolves.toStrictEqual("async-x")
+        })
+    })
+
+    describe("mock", () => {
+        it("should call the fake with the args and propagate its return", () => {
+            let realRan = false
+            const write = effect.fn((value: number) => {
+                realRan = true
+                return value * 2
+            })
+            const fakeArgs: number[] = []
+            effect.mock(write, (value: number) => {
+                fakeArgs.push(value)
+                return 99
+            })
+
+            const result = write(5)
+
+            expect(result).toStrictEqual(99)
+            expect(fakeArgs).toStrictEqual([5])
+            expect(realRan).toStrictEqual(false)
+            expect(effect.log).toHaveLength(1)
+        })
+
+        it("should run the fake even on dry-run (mock wins over the gate)", () => {
+            effect.enabled = false
+            const write = effect.fn(() => "real")
+            effect.mock(write, () => "fake")
+            expect(write()).toStrictEqual("fake")
+        })
+
+        it("should only override the wrapper it was keyed to", () => {
+            const a = effect.fn(() => "real-a")
+            const b = effect.fn(() => "real-b")
+            effect.mock(a, () => "fake-a")
+            expect(a()).toStrictEqual("fake-a")
+            expect(b()).toStrictEqual("real-b")
+        })
+    })
+
+    describe("unmock", () => {
+        it("should remove a single override and fall back to real", () => {
+            const write = effect.fn(() => "real")
+            effect.mock(write, () => "fake")
+            effect.unmock(write)
+            expect(write()).toStrictEqual("real")
+        })
+    })
+
+    describe("reset", () => {
+        it("should clear mocks, clear the log, and restore enabled", () => {
+            effect.enabled = false
+            const write = effect.fn(() => "real")
+            effect.mock(write, () => "fake")
+            write()
+
+            effect.reset()
+
+            expect(effect.enabled).toStrictEqual(true)
+            expect(effect.log).toStrictEqual([])
+            expect(write()).toStrictEqual("real")
+        })
     })
 })
 

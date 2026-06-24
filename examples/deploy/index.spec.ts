@@ -45,7 +45,7 @@ describe("deploy", () => {
         const exitCode = process.exitCode
         spy.mockRestore()
         expect(output).toContain('Invalid environment "dev".')
-        expect(exitCode).toStrictEqual(1)
+        expect(exitCode).toStrictEqual(2)
     })
 
     it("should render an error for invalid port", async () => {
@@ -57,7 +57,7 @@ describe("deploy", () => {
         const exitCode = process.exitCode
         spy.mockRestore()
         expect(output).toContain('Invalid port "0".')
-        expect(exitCode).toStrictEqual(1)
+        expect(exitCode).toStrictEqual(2)
     })
 
     it("should skip effect with --dry-run", async () => {

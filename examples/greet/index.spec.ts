@@ -44,6 +44,6 @@ describe("greet", () => {
         const exitCode = process.exitCode
         spy.mockRestore()
         expect(output).toContain("name")
-        expect(exitCode).toStrictEqual(1)
+        expect(exitCode).toStrictEqual(2)
     })
 })

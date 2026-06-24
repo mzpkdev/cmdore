@@ -50,7 +50,7 @@ describe("copy", () => {
         const exitCode = process.exitCode
         spy.mockRestore()
         expect(output).toContain('An argument "destination" is required.')
-        expect(exitCode).toStrictEqual(1)
+        expect(exitCode).toStrictEqual(2)
     })
 })
 
@@ -91,6 +91,6 @@ describe("remove", () => {
         const exitCode = process.exitCode
         spy.mockRestore()
         expect(output).toContain('An option "confirm" is required.')
-        expect(exitCode).toStrictEqual(1)
+        expect(exitCode).toStrictEqual(2)
     })
 })

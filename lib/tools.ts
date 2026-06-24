@@ -1,6 +1,39 @@
 import * as readline from "node:readline"
 import log, { dim, red, yellow } from "logtint"
 
+/**
+ * The widest function shape the registry can store. `never[]` parameters make
+ * every concrete function assignable to it, so wrappers and mocks of differing
+ * signatures share one `Map`/`log` without resorting to `any`. Specific
+ * signatures are recovered at the typed `effect.fn`/`effect.mock` boundaries.
+ */
+type AnyEffect = (...args: never[]) => unknown
+
+/**
+ * One recorded invocation of an `effect.fn` wrapper.
+ *
+ * @property wrapper - the wrapper reference that was called (the registry key)
+ * @property label - display-only name, for dry-run/log output
+ * @property args - the arguments the wrapper was called with
+ */
+type EffectRecord = {
+    wrapper: AnyEffect
+    label: string
+    args: readonly unknown[]
+}
+
+const mocks = new Map<AnyEffect, AnyEffect>()
+
+/**
+ * The dry-run gate. `effect(callback)` runs `callback` only while
+ * `effect.enabled` is `true`, returning its result (awaited); when disabled it
+ * skips and resolves to `undefined`. `execute.ts` flips `effect.enabled` off
+ * for `--dry-run`.
+ *
+ * Also a tiny effect registry: see {@link effect.fn} to wrap a write
+ * side-effect that can be skipped on dry-run, substituted by a test, or
+ * recorded with its arguments — keyed by the wrapper reference, never a name.
+ */
 export const effect = async (
     callback: () => Promise<unknown> | unknown
 ): Promise<unknown> => {
@@ -9,6 +42,74 @@ export const effect = async (
     }
 }
 effect.enabled = true
+
+/**
+ * Every {@link effect.fn} invocation appended in order: `{ wrapper, label, args }`.
+ * Cleared by {@link effect.reset}.
+ */
+effect.log = [] as EffectRecord[]
+
+/**
+ * Wrap a write side-effect so it can be gated, substituted, or recorded.
+ *
+ * Returns a callable with the SAME signature as `real`. On each call it
+ * records `{ wrapper, label, args }` into {@link effect.log}, then:
+ *   1. if a mock is registered for THIS wrapper reference → calls the mock and
+ *      returns its result;
+ *   2. else if dry-run (`!effect.enabled`) → skips and returns `undefined`;
+ *   3. else → calls `real(...args)` and returns it.
+ *
+ * @param real - the function to wrap (sync or async)
+ * @param label - display-only name for dry-run/log output; never the key.
+ *   Defaults to `real.name || "anonymous"`.
+ */
+effect.fn = <TArgs extends unknown[], TReturn>(
+    real: (...args: TArgs) => TReturn,
+    label: string = real.name || "anonymous"
+): ((...args: TArgs) => TReturn | undefined) => {
+    const wrapper = (...args: TArgs): TReturn | undefined => {
+        effect.log.push({ wrapper, label, args })
+        const fake = mocks.get(wrapper)
+        if (fake !== undefined) {
+            return (fake as (...args: TArgs) => TReturn)(...args)
+        }
+        if (!effect.enabled) {
+            return undefined
+        }
+        return real(...args)
+    }
+    return wrapper
+}
+
+/**
+ * Register an override for an {@link effect.fn} wrapper, keyed by the wrapper
+ * REFERENCE. While registered, calling the wrapper invokes `fake` (with the
+ * same args) instead of the real function. `fake` must match `wrapper`'s
+ * signature.
+ */
+effect.mock = <TFunction extends AnyEffect>(
+    wrapper: TFunction,
+    fake: TFunction
+): void => {
+    mocks.set(wrapper, fake)
+}
+
+/**
+ * Remove the override for a single {@link effect.fn} wrapper, if any.
+ */
+effect.unmock = (wrapper: AnyEffect): void => {
+    mocks.delete(wrapper)
+}
+
+/**
+ * Clear ALL registry state: every mock and the {@link effect.log}, and restore
+ * `effect.enabled` to `true`. Call between tests so nothing leaks.
+ */
+effect.reset = (): void => {
+    mocks.clear()
+    effect.log.length = 0
+    effect.enabled = true
+}
 
 export const mock = <TInstance>(
     instance: TInstance,

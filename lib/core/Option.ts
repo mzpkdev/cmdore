@@ -29,7 +29,10 @@ namespace Option {
     ): Promise<unknown> => {
         if (values == null) {
             if (option.required) {
-                throw new CmdoreError(`An option "${option.name}" is required.`)
+                throw new CmdoreError(
+                    `An option "${option.name}" is required.`,
+                    { exitCode: 2 }
+                )
             }
             if (option.defaultValue) {
                 return option.defaultValue()
@@ -43,7 +46,8 @@ namespace Option {
         const result = await option.schema["~standard"].validate(input)
         if (result.issues) {
             throw new CmdoreError(
-                result.issues.map((issue) => issue.message).join("; ")
+                result.issues.map((issue) => issue.message).join("; "),
+                { exitCode: 2 }
             )
         }
         return result.value

@@ -21,7 +21,8 @@ namespace Argument {
         const result = await argument.schema["~standard"].validate(input)
         if (result.issues) {
             throw new CmdoreError(
-                result.issues.map((issue) => issue.message).join("; ")
+                result.issues.map((issue) => issue.message).join("; "),
+                { exitCode: 2 }
             )
         }
         return result.value
@@ -34,7 +35,8 @@ namespace Argument {
         if (value == null) {
             if (argument.required) {
                 throw new CmdoreError(
-                    `An argument "${argument.name}" is required.`
+                    `An argument "${argument.name}" is required.`,
+                    { exitCode: 2 }
                 )
             }
             return argument.defaultValue?.()
@@ -49,7 +51,8 @@ namespace Argument {
         if (values.length === 0) {
             if (argument.required) {
                 throw new CmdoreError(
-                    `An argument "${argument.name}" is required.`
+                    `An argument "${argument.name}" is required.`,
+                    { exitCode: 2 }
                 )
             }
             if (argument.defaultValue) {

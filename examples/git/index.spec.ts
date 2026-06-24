@@ -83,7 +83,7 @@ describe("push", () => {
         const exitCode = process.exitCode
         spy.mockRestore()
         expect(output).toContain('An option "token" is required.')
-        expect(exitCode).toStrictEqual(1)
+        expect(exitCode).toStrictEqual(2)
     })
 })
 

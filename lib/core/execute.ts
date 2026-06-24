@@ -95,25 +95,27 @@ const helpCommand = (
         log``
     }
     log`${bold(dim`OPTIONS`)}`
-    const man: [string, string][] = (command.options ?? []).map((option: Option): [string, string] => {
-        const flags = option.alias
-            ? `-${option.alias}, --${option.name}`
-            : `--${option.name}`.padStart(4, " ")
-        const args = option.hint ? ` <${option.hint}>` : ""
-        let info = ""
-        if (option.required) {
-            info = "(required)"
+    const man: [string, string][] = (command.options ?? []).map(
+        (option: Option): [string, string] => {
+            const flags = option.alias
+                ? `-${option.alias}, --${option.name}`
+                : `--${option.name}`.padStart(4, " ")
+            const args = option.hint ? ` <${option.hint}>` : ""
+            let info = ""
+            if (option.required) {
+                info = "(required)"
+            }
+            if (option.defaultValue) {
+                const defaultValue = option.defaultValue()
+                info = `(${JSON.stringify(defaultValue)})`
+            }
+            const left = `${flags}${args}`
+            const right = option.description
+                ? `${option.description} ${info}`.trim()
+                : info
+            return [left, right]
         }
-        if (option.defaultValue) {
-            const defaultValue = option.defaultValue()
-            info = `(${JSON.stringify(defaultValue)})`
-        }
-        const left = `${flags}${args}`
-        const right = option.description
-            ? `${option.description} ${info}`.trim()
-            : info
-        return [left, right]
-    })
+    )
     for (const [left, right] of man) {
         log`  ${left.padEnd(48, " ")}  ${right}`
     }
@@ -241,7 +243,8 @@ const run = async (
             const name = eq === -1 ? arg.slice(2) : arg.slice(2, eq)
             if (name.length > 0 && !known.has(name)) {
                 throw new CmdoreError(`An option "--${name}" is unknown.`, {
-                    code: "cmdore.unknownFlag"
+                    code: "cmdore.unknownFlag",
+                    exitCode: 2
                 })
             }
         } else if (arg.startsWith("-") && arg.length > 1) {
@@ -249,7 +252,8 @@ const run = async (
             for (const alias of arg.slice(1)) {
                 if (!known.has(alias)) {
                     throw new CmdoreError(`An option "-${alias}" is unknown.`, {
-                        code: "cmdore.unknownFlag"
+                        code: "cmdore.unknownFlag",
+                        exitCode: 2
                     })
                 }
             }
@@ -288,7 +292,8 @@ const run = async (
     }
     if (!commandless && command == null) {
         throw new CmdoreError(`A command "${main}" does not exist.`, {
-            code: "cmdore.unknownCommand"
+            code: "cmdore.unknownCommand",
+            exitCode: 2
         })
     }
     // Invariant: by this point `command` is always resolved. In commandless mode
