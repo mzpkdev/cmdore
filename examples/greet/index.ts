@@ -27,7 +27,7 @@ const greet = defineCommand({
 // it is invoked as `greet <name> [options]` with no subcommand token. The
 // metadata fixes the program name/description independently of the host
 // package.json so the rendered help is stable.
-export const program = (argv?: string[]): Promise<void> =>
+export const program = (argv?: string[]): Promise<number> =>
     execute(greet, {
         argv,
         metadata: {

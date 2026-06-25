@@ -54,7 +54,7 @@ const status = defineCommand({
     }
 })
 
-export const program = (argv?: string[]): Promise<void> =>
+export const program = (argv?: string[]): Promise<number> =>
     execute([push, status], {
         argv,
         metadata: {

@@ -58,7 +58,7 @@ describe("execute - command dispatch", () => {
         const spy = vi.spyOn(console, "error").mockImplementation(() => {})
         await expect(
             execute([], { argv: ["nonexistent"], metadata })
-        ).resolves.toBeUndefined()
+        ).resolves.toBe(2)
         const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
         const exitCode = process.exitCode
         spy.mockRestore()
@@ -133,7 +133,7 @@ describe("execute - error handling", () => {
                 ],
                 { argv: ["fail"], metadata }
             )
-        ).resolves.toBeUndefined()
+        ).resolves.toBe(1)
         const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
         spy.mockRestore()
         expect(output).toContain("boom")
@@ -674,7 +674,7 @@ describe("execute - option parsing", () => {
                 ],
                 { argv: ["deploy"], metadata }
             )
-        ).resolves.toBeUndefined()
+        ).resolves.toBe(2)
         const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
         const exitCode = process.exitCode
         spy.mockRestore()
@@ -723,7 +723,7 @@ describe("execute - option parsing", () => {
                 ],
                 { argv: ["serve", "--port", "abc"], metadata }
             )
-        ).resolves.toBeUndefined()
+        ).resolves.toBe(2)
         const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
         const exitCode = process.exitCode
         spy.mockRestore()
@@ -783,7 +783,7 @@ describe("execute - configuration", () => {
     it("should not throw with a minimal configuration", async () => {
         await expect(
             execute([], { argv: [], metadata })
-        ).resolves.toBeUndefined()
+        ).resolves.toBe(0)
     })
 })
 
@@ -837,7 +837,7 @@ describe("execute - positional arguments", () => {
                 ],
                 { argv: ["deploy"], metadata }
             )
-        ).resolves.toBeUndefined()
+        ).resolves.toBe(2)
         const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
         const exitCode = process.exitCode
         spy.mockRestore()
@@ -959,7 +959,7 @@ describe("execute - positional arguments", () => {
                 ],
                 { argv: ["bad"], metadata }
             )
-        ).resolves.toBeUndefined()
+        ).resolves.toBe(1)
         const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
         const exitCode = process.exitCode
         spy.mockRestore()
@@ -1128,7 +1128,7 @@ describe("execute - unknown flag rejection", () => {
                 argv: ["open", "--bogus"],
                 metadata
             })
-        ).resolves.toBeUndefined()
+        ).resolves.toBe(2)
         const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
         const exitCode = process.exitCode
         spy.mockRestore()
@@ -1257,7 +1257,7 @@ describe("execute - commandless", () => {
                 },
                 { argv: [], metadata }
             )
-        ).resolves.toBeUndefined()
+        ).resolves.toBe(2)
         const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
         const exitCode = process.exitCode
         spy.mockRestore()

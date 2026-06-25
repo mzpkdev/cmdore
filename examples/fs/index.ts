@@ -48,7 +48,7 @@ const remove = defineCommand({
     }
 })
 
-export const program = (argv?: string[]): Promise<void> =>
+export const program = (argv?: string[]): Promise<number> =>
     execute([copy, remove], {
         argv,
         metadata: {

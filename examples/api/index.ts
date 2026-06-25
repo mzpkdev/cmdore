@@ -42,7 +42,7 @@ const list = defineCommand({
     }
 })
 
-export const program = (argv?: string[]): Promise<void> =>
+export const program = (argv?: string[]): Promise<number> =>
     execute([list], {
         argv,
         metadata: {

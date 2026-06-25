@@ -19,21 +19,21 @@ describe("execute overload accepts a single command and an array", () => {
         })
         // Commandless: a single Command resolves the scalar overload.
         expectTypeOf(execute(command, { metadata })).toEqualTypeOf<
-            Promise<void>
+            Promise<number>
         >()
         // Git-style: an array of Commands resolves the array overload.
         expectTypeOf(execute([command], { metadata })).toEqualTypeOf<
-            Promise<void>
+            Promise<number>
         >()
     })
 
     it("accepts a configuration object on both overloads", () => {
         const command = defineCommand({ name: "noop", run() {} })
         expectTypeOf(execute(command, { argv: [], metadata })).toEqualTypeOf<
-            Promise<void>
+            Promise<number>
         >()
         expectTypeOf(execute([command], { argv: [], metadata })).toEqualTypeOf<
-            Promise<void>
+            Promise<number>
         >()
     })
 })

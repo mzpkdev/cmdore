@@ -45,7 +45,7 @@ describe("copy", () => {
 
     it("should render an error when destination is missing", async () => {
         const spy = vi.spyOn(console, "error").mockImplementation(() => {})
-        await expect(program(["copy"])).resolves.toBeUndefined()
+        await expect(program(["copy"])).resolves.toBe(2)
         const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
         const exitCode = process.exitCode
         spy.mockRestore()
@@ -86,7 +86,7 @@ describe("remove", () => {
 
     it("should render an error when --confirm is missing", async () => {
         const spy = vi.spyOn(console, "error").mockImplementation(() => {})
-        await expect(program(["remove", "a.ts"])).resolves.toBeUndefined()
+        await expect(program(["remove", "a.ts"])).resolves.toBe(2)
         const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
         const exitCode = process.exitCode
         spy.mockRestore()

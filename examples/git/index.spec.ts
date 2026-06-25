@@ -78,7 +78,7 @@ describe("push", () => {
 
     it("should render an error when --token is missing", async () => {
         const spy = vi.spyOn(console, "error").mockImplementation(() => {})
-        await expect(program(["push"])).resolves.toBeUndefined()
+        await expect(program(["push"])).resolves.toBe(2)
         const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
         const exitCode = process.exitCode
         spy.mockRestore()

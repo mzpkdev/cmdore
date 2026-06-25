@@ -149,17 +149,22 @@ const version = (value: string): void => {
 }
 
 type Execute = {
-    (command: Command<any, any>, config: Configuration): Promise<void>
+    (command: Command<any, any>, config: Configuration): Promise<number>
     (
         commands: readonly Command<any, any>[],
         config: Configuration
-    ): Promise<void>
+    ): Promise<number>
 }
 
+// Resolves to the process exit code: 0 on success, and on the default
+// onError:"exit" path the failing command's code (a CmdoreError's exitCode,
+// else 1) — still mirrored to process.exitCode so existing callers that read
+// the side effect keep working. With onError:"throw" the error is rethrown
+// instead and the caller owns the mapping.
 export const execute: Execute = async (
     input: Command<any, any> | readonly Command<any, any>[],
     config: Configuration
-): Promise<void> => {
+): Promise<number> => {
     const {
         argv = process.argv.slice(2),
         metadata,
@@ -170,6 +175,7 @@ export const execute: Execute = async (
     const commands: readonly Command<any, any>[] = commandless ? [input] : input
     try {
         await run(commands, argv, metadata, interceptors, commandless)
+        return 0
     } catch (error) {
         if (onError === "throw") {
             throw error
@@ -182,7 +188,9 @@ export const execute: Execute = async (
         ) {
             terminal.verbose(error.stack)
         }
-        process.exitCode = error instanceof CmdoreError ? error.exitCode : 1
+        const code = error instanceof CmdoreError ? error.exitCode : 1
+        process.exitCode = code
+        return code
     }
 }
 

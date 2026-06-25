@@ -62,7 +62,7 @@ const deploy = defineCommand({
     }
 })
 
-export const program = (argv?: string[]): Promise<void> =>
+export const program = (argv?: string[]): Promise<number> =>
     execute([deploy], {
         argv,
         metadata: {

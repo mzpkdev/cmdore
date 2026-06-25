@@ -40,7 +40,7 @@ describe("deploy", () => {
 
     it("should render an error for invalid environment", async () => {
         const spy = vi.spyOn(console, "error").mockImplementation(() => {})
-        await expect(program(["deploy", "dev"])).resolves.toBeUndefined()
+        await expect(program(["deploy", "dev"])).resolves.toBe(2)
         const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
         const exitCode = process.exitCode
         spy.mockRestore()
@@ -52,7 +52,7 @@ describe("deploy", () => {
         const spy = vi.spyOn(console, "error").mockImplementation(() => {})
         await expect(
             program(["deploy", "staging", "--port", "0"])
-        ).resolves.toBeUndefined()
+        ).resolves.toBe(2)
         const output = spy.mock.calls.map((call) => String(call[0])).join("\n")
         const exitCode = process.exitCode
         spy.mockRestore()
